@@ -1,0 +1,2493 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FAFAF9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kayzen">
+<title>Kayzen — Samaradorlik</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+
+<style>
+/* === DESIGN TOKENS === */
+:root {
+  --bg: #FAFAF9;
+  --surface: #FFFFFF;
+  --surface-2: #F4F4F5;
+  --surface-3: #EFEFEF;
+  --border: #E4E4E7;
+  --border-strong: #D4D4D8;
+  --text: #18181B;
+  --text-muted: #71717A;
+  --text-light: #A1A1AA;
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
+  --accent-soft: #DBEAFE;
+  --success: #16A34A;
+  --success-soft: #DCFCE7;
+  --warning: #F59E0B;
+  --warning-soft: #FEF3C7;
+  --danger: #DC2626;
+  --danger-soft: #FEE2E2;
+  --purple: #8B5CF6;
+  --purple-soft: #EDE9FE;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* === RESET === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Roboto", system-ui, "Segoe UI", sans-serif;
+  font-size: 16px; line-height: 1.5; color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+button, input, textarea, select {
+  font: inherit; color: inherit; background: none; border: none; outline: none;
+}
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+ul, ol { list-style: none; }
+a { color: var(--accent); text-decoration: none; }
+
+/* === LAYOUT === */
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  position: relative;
+}
+@media (min-width: 481px) {
+  #app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+}
+
+#topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(250, 250, 249, 0.85);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  padding: calc(var(--safe-top) + 14px) 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topbar-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.topbar-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.topbar-actions { display: flex; gap: 6px; }
+
+.icon-btn {
+  width: 38px; height: 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  color: var(--text);
+  transition: background 150ms ease-out;
+}
+.icon-btn:hover, .icon-btn:active { background: var(--surface-2); }
+.icon-btn svg { width: 22px; height: 22px; }
+
+#main {
+  flex: 1;
+  padding: 0 16px 120px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.view { display: none; padding-top: 12px; }
+.view.active { display: block; animation: fadeIn 220ms ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* === BOTTOM NAV === */
+#bottombar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+  display: flex; justify-content: center;
+  padding-bottom: var(--safe-bottom);
+  pointer-events: none;
+}
+.bottombar-inner {
+  width: 100%; max-width: 480px;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-top: 1px solid var(--border);
+  pointer-events: auto;
+}
+.tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  padding: 10px 4px 12px;
+  color: var(--text-muted);
+  font-size: 11px; font-weight: 500;
+  transition: color 150ms ease-out;
+}
+.tab svg { width: 24px; height: 24px; }
+.tab.active { color: var(--accent); }
+.tab:active { transform: scale(0.96); }
+
+/* === FAB === */
+#fab {
+  position: fixed; bottom: calc(82px + var(--safe-bottom)); right: 16px; z-index: 45;
+  width: 56px; height: 56px;
+  border-radius: 28px;
+  background: var(--accent); color: white;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-lg), 0 0 0 4px rgba(37,99,235,0.1);
+  transition: transform 150ms ease-out, background 150ms ease-out;
+}
+#fab:active { transform: scale(0.94); background: var(--accent-hover); }
+#fab svg { width: 26px; height: 26px; }
+@media (min-width: 481px) {
+  #fab { right: calc(50% - 240px + 16px); }
+}
+
+/* === CARDS === */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.card + .card { margin-top: 10px; }
+
+/* === BUTTONS === */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 16px; min-height: 44px;
+  border-radius: 10px;
+  font-size: 15px; font-weight: 500;
+  transition: all 150ms ease-out;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:active { background: var(--accent-hover); transform: scale(0.98); }
+.btn-secondary { background: var(--surface-2); color: var(--text); }
+.btn-secondary:active { background: var(--surface-3); }
+.btn-danger { background: var(--danger-soft); color: var(--danger); }
+.btn-danger:active { background: #FCC; }
+.btn-ghost { color: var(--text-muted); }
+.btn-ghost:active { background: var(--surface-2); }
+.btn-block { width: 100%; }
+
+/* === INPUTS === */
+.input, .textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 16px;
+  transition: border-color 150ms ease-out;
+}
+.input:focus, .textarea:focus { border-color: var(--accent); }
+.textarea { resize: none; min-height: 80px; line-height: 1.5; }
+.input::placeholder, .textarea::placeholder { color: var(--text-light); }
+
+/* === CHIPS === */
+.chip-row {
+  display: flex; gap: 8px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: 4px 0 8px;
+  scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+.chip {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px; font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: all 150ms ease-out;
+}
+.chip.active { background: var(--text); color: white; border-color: var(--text); }
+.chip:active { transform: scale(0.96); }
+
+/* === BADGES === */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.badge-important { background: var(--danger-soft); color: var(--danger); }
+.badge-todo { background: var(--accent-soft); color: var(--accent); }
+.badge-delegated { background: var(--purple-soft); color: var(--purple); }
+.badge-meta { background: var(--surface-2); color: var(--text-muted); }
+
+/* === TASK CARD === */
+.task-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  transition: all 150ms ease-out;
+  position: relative;
+}
+.task-card:active { background: var(--surface-2); transform: scale(0.995); }
+.task-check {
+  flex: 0 0 26px; width: 26px; height: 26px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 150ms ease-out;
+}
+.task-check svg { width: 14px; height: 14px; color: white; opacity: 0; }
+.task-card.completed .task-check { background: var(--success); border-color: var(--success); }
+.task-card.completed .task-check svg { opacity: 1; }
+.task-card.completed .task-title { text-decoration: line-through; color: var(--text-muted); }
+.task-body { flex: 1; min-width: 0; }
+.task-title {
+  font-size: 15px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.task-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--text-muted); }
+.task-meta .badge { font-size: 10px; padding: 2px 7px; }
+
+/* === MIT BLOCK === */
+.mit-block {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  border: 1px solid #BFDBFE;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.mit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.mit-title { font-size: 14px; font-weight: 600; color: #1E40AF; }
+.mit-empty {
+  color: #3B82F6; font-size: 13px; padding: 12px 4px; text-align: center;
+}
+.mit-block .task-card { background: white; }
+
+/* === CHECKLIST === */
+.checklist-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+.stat-card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+.stat-card .value { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.stat-card .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.progress-ring { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.ring-wrap { position: relative; width: 56px; height: 56px; }
+.ring-wrap svg { transform: rotate(-90deg); }
+.ring-wrap .ring-text {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+}
+.progress-right { text-align: left; }
+.progress-right .big { font-size: 18px; font-weight: 700; }
+.progress-right .small { font-size: 11px; color: var(--text-muted); }
+
+.streak-emoji { font-size: 24px; }
+.streak-text-wrap { text-align: left; }
+
+.habit-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 8px;
+  transition: all 150ms ease-out;
+}
+.habit-row:active { transform: scale(0.99); }
+.habit-emoji {
+  flex: 0 0 36px; width: 36px; height: 36px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.habit-info { flex: 1; min-width: 0; }
+.habit-name { font-size: 15px; font-weight: 500; }
+.habit-spark { display: flex; gap: 3px; margin-top: 4px; }
+.spark-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--surface-3);
+}
+.spark-dot.done { background: var(--success); }
+.spark-dot.today { box-shadow: 0 0 0 2px var(--accent-soft); }
+
+.habit-check {
+  flex: 0 0 28px; width: 28px; height: 28px;
+  border-radius: 8px;
+  border: 2px solid var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 150ms ease-out;
+}
+.habit-check svg { width: 16px; height: 16px; color: white; opacity: 0; transition: opacity 150ms; }
+.habit-row.done .habit-check { background: var(--success); border-color: var(--success); }
+.habit-row.done .habit-check svg { opacity: 1; }
+.habit-row.done .habit-name { color: var(--text-muted); }
+
+/* === DATE NAV === */
+.date-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 14px;
+}
+.date-nav button.nav-arrow {
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.date-nav button.nav-arrow:active { background: var(--surface-2); }
+.date-nav .nav-arrow svg { width: 20px; height: 20px; color: var(--text-muted); }
+.date-nav .date-label {
+  flex: 1; text-align: center; padding: 0 8px;
+  font-weight: 600; font-size: 15px;
+}
+.date-nav .date-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* === KAYZEN === */
+.kayzen-intro {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 1px solid #FCD34D;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #78350F;
+}
+.kayzen-q {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.kayzen-q .q-text { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+.kayzen-q .textarea { min-height: 90px; background: var(--surface-2); border: none; }
+.kayzen-q .textarea:focus { background: white; box-shadow: 0 0 0 2px var(--accent-soft); }
+.save-indicator {
+  font-size: 11px; color: var(--success);
+  text-align: right;
+  margin-top: 6px;
+  opacity: 0; transition: opacity 300ms;
+}
+.save-indicator.show { opacity: 1; }
+
+/* === STATS === */
+.stats-section { margin-bottom: 20px; }
+.stats-section h3 {
+  font-size: 13px; font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+.stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.heatmap {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--surface-3);
+  cursor: pointer;
+}
+.heatmap-legend {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-muted);
+  margin-top: 8px; padding: 0 4px;
+}
+.heatmap-legend .swatch { width: 12px; height: 12px; border-radius: 3px; }
+
+.habit-stat-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.habit-stat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.habit-stat-head .name { font-size: 14px; font-weight: 500; flex: 1; }
+.habit-stat-head .pct { font-size: 13px; font-weight: 600; color: var(--accent); }
+.bar { width: 100%; height: 6px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 400ms ease-out; }
+.habit-stat-meta {
+  display: flex; gap: 14px; margin-top: 6px;
+  font-size: 11px; color: var(--text-muted);
+}
+
+/* === MODALS / SHEETS === */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.4);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: backdropIn 200ms ease-out;
+}
+@keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: 100%; max-width: 480px;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  animation: sheetIn 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: var(--safe-bottom);
+}
+@keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
+.modal-full {
+  height: 100%; max-height: 100%;
+  border-radius: 0;
+  animation: slideIn 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: none; } }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.modal-title { font-size: 17px; font-weight: 600; }
+.modal-body { flex: 1; padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-foot { padding: 12px 16px calc(12px + var(--safe-bottom)); border-top: 1px solid var(--border); background: var(--surface); }
+.handle-bar {
+  width: 40px; height: 4px;
+  background: var(--border-strong);
+  border-radius: 2px;
+  margin: 8px auto 4px;
+}
+
+/* === FORM SECTIONS === */
+.form-section { margin-bottom: 18px; }
+.form-label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+.status-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.status-opt {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 12px; font-weight: 500;
+  text-align: center;
+  transition: all 150ms ease-out;
+}
+.status-opt .opt-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+.status-opt.active.important { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+.status-opt.active.todo { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.status-opt.active.delegated { border-color: var(--purple); background: var(--purple-soft); color: var(--purple); }
+
+/* === SUBTASK === */
+.subtask {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.subtask:last-child { border-bottom: none; }
+.subtask-check {
+  flex: 0 0 22px; width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+}
+.subtask-check svg { width: 12px; height: 12px; color: white; opacity: 0; }
+.subtask.done .subtask-check { background: var(--success); border-color: var(--success); }
+.subtask.done .subtask-check svg { opacity: 1; }
+.subtask.done .subtask-input { text-decoration: line-through; color: var(--text-muted); }
+.subtask-input {
+  flex: 1; font-size: 14px;
+  background: transparent;
+  padding: 4px 0;
+}
+.subtask-del {
+  flex: 0 0 32px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-light);
+  border-radius: 6px;
+}
+.subtask-del:active { background: var(--surface-2); color: var(--danger); }
+
+/* === TOAST === */
+#toast-container {
+  position: fixed; bottom: calc(80px + var(--safe-bottom) + 20px); left: 0; right: 0;
+  z-index: 200;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 0 16px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--text); color: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: var(--shadow-lg);
+  max-width: 320px;
+  pointer-events: auto;
+  animation: toastIn 200ms ease-out;
+}
+.toast .toast-action {
+  color: var(--accent-soft); font-weight: 600;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+@keyframes toastIn { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* === EMPTY === */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+.empty-state .emoji { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
+.empty-state .text { font-size: 14px; }
+
+/* === POMODORO === */
+.pomo-screen {
+  background: linear-gradient(180deg, #FEF3C7 0%, #FCD34D 100%);
+  min-height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 24px;
+  color: #78350F;
+}
+.pomo-mode { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 24px; }
+.pomo-time { font-size: 88px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.pomo-task { font-size: 14px; margin-top: 16px; opacity: 0.7; min-height: 20px; }
+.pomo-controls { display: flex; gap: 12px; margin-top: 40px; }
+.pomo-btn {
+  width: 64px; height: 64px;
+  border-radius: 32px;
+  background: rgba(255,255,255,0.7);
+  display: flex; align-items: center; justify-content: center;
+  color: #78350F;
+  transition: all 150ms ease-out;
+}
+.pomo-btn:active { transform: scale(0.94); }
+.pomo-btn.primary { background: #78350F; color: white; width: 80px; height: 80px; border-radius: 40px; }
+.pomo-btn svg { width: 28px; height: 28px; }
+.pomo-btn.primary svg { width: 32px; height: 32px; }
+.pomo-stats {
+  display: flex; gap: 24px; margin-top: 32px;
+  font-size: 13px;
+}
+.pomo-stats .s-val { font-size: 18px; font-weight: 700; }
+
+/* === CONFETTI === */
+@keyframes confetti-fall {
+  0% { transform: translateY(-20px) rotate(0); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.confetti-piece {
+  position: fixed; top: 0;
+  width: 8px; height: 14px;
+  pointer-events: none;
+  z-index: 300;
+  animation: confetti-fall 2s ease-out forwards;
+}
+
+/* === MISC === */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row.between { justify-content: space-between; }
+.muted { color: var(--text-muted); }
+.small { font-size: 12px; }
+.bold { font-weight: 600; }
+.spacer { flex: 1; }
+.hidden { display: none !important; }
+
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.settings-row .label { font-size: 15px; }
+.settings-row .desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.arch-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.arch-card .date { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+.arch-card .preview { font-size: 13px; color: var(--text); }
+
+.cat-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header id="topbar">
+    <div class="topbar-row">
+      <div>
+        <div class="topbar-title" id="page-title">Vazifalar</div>
+        <div class="topbar-sub" id="page-sub"></div>
+      </div>
+      <div class="topbar-actions" id="page-actions"></div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="view-tasks" class="view active"></section>
+    <section id="view-checklist" class="view"></section>
+    <section id="view-kayzen" class="view"></section>
+    <section id="view-stats" class="view"></section>
+  </main>
+
+  <button id="fab" aria-label="Yangi qo'shish">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <nav id="bottombar">
+    <div class="bottombar-inner">
+      <button class="tab active" data-view="tasks" aria-label="Vazifalar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>Vazifalar</span>
+      </button>
+      <button class="tab" data-view="checklist" aria-label="Chek list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-6"/></svg>
+        <span>Chek list</span>
+      </button>
+      <button class="tab" data-view="kayzen" aria-label="Kayzen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
+        <span>Kayzen</span>
+      </button>
+      <button class="tab" data-view="stats" aria-label="Statistika">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Statistika</span>
+      </button>
+    </div>
+  </nav>
+
+  <div id="modal-host"></div>
+  <div id="toast-container"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+/* ============================================================
+   KAYZEN — Shaxsiy samaradorlik ilovasi
+   Bitta fayldagi vanilla JS to'liq versiya
+   ============================================================ */
+
+/* === STORAGE & STATE === */
+const STORAGE_KEY = 'kayzen-app-data';
+const APP_VERSION = 1;
+
+const DEFAULT_HABITS = [
+  { emoji: '🌅', name: 'Bomdodga turish' },
+  { emoji: '📖', name: '30 min Diniy kitob' },
+  { emoji: '🧘', name: 'Kayzen vaqt' },
+  { emoji: '📝', name: 'Kunni rejalashtirdim' },
+  { emoji: '💊', name: 'Vitamin ichdim' },
+  { emoji: '💝', name: 'Moddiy ehson qilish' },
+  { emoji: '💰', name: 'Finance report' },
+  { emoji: '📿', name: '2000 ta tasbeh' },
+  { emoji: '🏋️', name: 'Trenirovka' },
+  { emoji: '📊', name: 'Hisobotlarni tekshirdim' },
+  { emoji: '🥗', name: "To'g'ri ovqatlanish" },
+  { emoji: '🤖', name: "AI bo'yicha dars ko'rdim" },
+  { emoji: '🎯', name: 'Deep Work 1 (2 soat)' },
+  { emoji: '🎯', name: 'Deep Work 2 (2 soat)' },
+];
+
+const DEFAULT_QUESTIONS = [
+  "Kecha samaradorliging qanday bo'ldi?",
+  "G'alabalar kundaligi — kechagi g'alabalaringni yozing",
+  "Eng katta xavf nima va qanday oldini olaman?",
+  "Arzon va sifatli dofamin holati qanday?",
+  "Qanday qilib daromadni oshirish mumkin?",
+  "Qanday qarzdan tezroq chiqaman?",
+];
+
+const DEFAULT_CATEGORIES = ['Marketing', 'Shaxsiy', 'Sport', 'Moliya', 'AI'];
+
+function uid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+function defaultData() {
+  return {
+    version: APP_VERSION,
+    tasks: [],
+    checklist: {
+      items: DEFAULT_HABITS.map((h, i) => ({ id: uid(), emoji: h.emoji, name: h.name, order: i })),
+      days: {},
+    },
+    kayzen: {
+      questions: DEFAULT_QUESTIONS.map((t, i) => ({ id: uid(), text: t, order: i })),
+      entries: {},
+    },
+    categories: [...DEFAULT_CATEGORIES],
+    pomodoro: {
+      workMin: 25,
+      shortBreakMin: 5,
+      longBreakMin: 15,
+      sessions: [],
+    },
+    settings: {
+      theme: 'light',
+      notificationsEnabled: false,
+      lastBackupAt: null,
+      firstRunCompleted: false,
+    },
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultData();
+    const parsed = JSON.parse(raw);
+    // Migratsiya
+    if (!parsed.version) parsed.version = 1;
+    if (!parsed.categories) parsed.categories = [...DEFAULT_CATEGORIES];
+    if (!parsed.pomodoro) parsed.pomodoro = { workMin: 25, shortBreakMin: 5, longBreakMin: 15, sessions: [] };
+    if (!parsed.settings) parsed.settings = { theme: 'light' };
+    return parsed;
+  } catch (e) {
+    console.error('Load error', e);
+    return defaultData();
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+  } catch (e) {
+    showToast("Saqlashda xatolik. Joy yetmagan bo'lishi mumkin.");
+  }
+}
+
+const state = {
+  data: loadState(),
+  currentView: 'tasks',
+  currentDate: todayKey(),
+  kayzenDate: todayKey(),
+  taskFilter: { time: 'today', status: 'all', search: '' },
+  pomodoro: null, // {running, mode, secondsLeft, taskId, sessionCount}
+};
+
+/* === DATE HELPERS === */
+function todayKey() {
+  return dateKey(new Date());
+}
+function dateKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function parseKey(k) {
+  const [y, m, d] = k.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+function formatDateUz(d) {
+  const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+  const days = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+  return d.getDate() + ' ' + months[d.getMonth()] + ', ' + days[d.getDay()];
+}
+function formatDateShort(d) {
+  const months = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+  return d.getDate() + ' ' + months[d.getMonth()];
+}
+function addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+function isToday(k) { return k === todayKey(); }
+function isFuture(k) { return parseKey(k).getTime() > parseKey(todayKey()).getTime(); }
+
+/* === ICONS === */
+const icons = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+  chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+  chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  pomo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4v.5"/><circle cx="12" cy="14" r="8"/><path d="M12 10v4l2 2"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+  reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+};
+
+/* === UI HELPERS === */
+function el(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+function vibrate(ms) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
+let _toastTimer = null;
+function showToast(text, actionLabel, actionFn, duration = 4500) {
+  const wrap = document.getElementById('toast-container');
+  wrap.innerHTML = '';
+  const t = el(`<div class="toast"><span>${escapeHtml(text)}</span>${actionLabel ? `<button class="toast-action">${escapeHtml(actionLabel)}</button>` : ''}</div>`);
+  if (actionLabel) {
+    t.querySelector('.toast-action').onclick = () => { actionFn && actionFn(); t.remove(); };
+  }
+  wrap.appendChild(t);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.remove(), duration);
+}
+
+function openSheet(content, opts = {}) {
+  const host = document.getElementById('modal-host');
+  const backdrop = el('<div class="modal-backdrop"></div>');
+  const modal = el(`<div class="modal ${opts.full ? 'modal-full' : ''}"></div>`);
+  if (!opts.full) modal.appendChild(el('<div class="handle-bar"></div>'));
+  modal.appendChild(content);
+  backdrop.appendChild(modal);
+  backdrop.onclick = (e) => { if (e.target === backdrop) closeSheet(); };
+  host.appendChild(backdrop);
+  document.body.style.overflow = 'hidden';
+  return backdrop;
+}
+function closeSheet() {
+  const host = document.getElementById('modal-host');
+  const last = host.lastElementChild;
+  if (last) last.remove();
+  if (!host.firstElementChild) document.body.style.overflow = '';
+}
+function closeAllSheets() {
+  const host = document.getElementById('modal-host');
+  host.innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+function confirmDialog(message, onYes) {
+  const content = el(`
+    <div>
+      <div class="modal-head"><div class="modal-title">Tasdiqlash</div></div>
+      <div class="modal-body"><p>${escapeHtml(message)}</p></div>
+      <div class="modal-foot row" style="gap:8px;">
+        <button class="btn btn-secondary btn-block" id="cnc">Bekor</button>
+        <button class="btn btn-danger btn-block" id="ok">Ha, davom et</button>
+      </div>
+    </div>`);
+  openSheet(content);
+  content.querySelector('#cnc').onclick = closeSheet;
+  content.querySelector('#ok').onclick = () => { closeSheet(); onYes(); };
+}
+
+/* === ROUTING / VIEWS === */
+function switchView(name) {
+  state.currentView = name;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  renderTopbar();
+  renderView();
+  window.scrollTo(0, 0);
+}
+
+function renderTopbar() {
+  const titleEl = document.getElementById('page-title');
+  const subEl = document.getElementById('page-sub');
+  const actEl = document.getElementById('page-actions');
+  actEl.innerHTML = '';
+  const map = {
+    tasks: { title: 'Vazifalar', sub: formatDateUz(new Date()) },
+    checklist: { title: 'Chek list', sub: 'Kunlik odatlar' },
+    kayzen: { title: 'Kayzen', sub: 'Kunlik tahlil' },
+    stats: { title: 'Statistika', sub: 'Sizning ko\'rsatkichlaringiz' },
+  };
+  titleEl.textContent = map[state.currentView].title;
+  subEl.textContent = map[state.currentView].sub;
+
+  // Pomodoro ikona — har doim
+  const pomoBtn = el(`<button class="icon-btn" aria-label="Pomodoro">${icons.pomo}</button>`);
+  pomoBtn.onclick = openPomodoro;
+  actEl.appendChild(pomoBtn);
+
+  if (state.currentView === 'checklist') {
+    const setBtn = el(`<button class="icon-btn" aria-label="Sozlamalar">${icons.settings}</button>`);
+    setBtn.onclick = openHabitsManager;
+    actEl.appendChild(setBtn);
+  } else if (state.currentView === 'kayzen') {
+    const archBtn = el(`<button class="icon-btn" aria-label="Arxiv">${icons.archive}</button>`);
+    archBtn.onclick = openKayzenArchive;
+    actEl.appendChild(archBtn);
+    const setBtn = el(`<button class="icon-btn" aria-label="Savollar">${icons.settings}</button>`);
+    setBtn.onclick = openKayzenManager;
+    actEl.appendChild(setBtn);
+  } else if (state.currentView === 'stats') {
+    const setBtn = el(`<button class="icon-btn" aria-label="Sozlamalar">${icons.settings}</button>`);
+    setBtn.onclick = openSettings;
+    actEl.appendChild(setBtn);
+  }
+}
+
+function renderView() {
+  if (state.currentView === 'tasks') renderTasks();
+  else if (state.currentView === 'checklist') renderChecklist();
+  else if (state.currentView === 'kayzen') renderKayzen();
+  else if (state.currentView === 'stats') renderStats();
+}
+
+/* ============================================================
+   === TASKS ===
+   ============================================================ */
+function renderTasks() {
+  const v = document.getElementById('view-tasks');
+  v.innerHTML = '';
+
+  // Search
+  const searchWrap = el(`
+    <div class="row" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:10px;gap:8px;">
+      <span style="color:var(--text-muted);display:flex;">${icons.search}</span>
+      <input class="input" id="task-search" placeholder="Vazifani qidirish..." style="border:none;padding:6px 0;flex:1;" value="${escapeHtml(state.taskFilter.search)}"/>
+    </div>`);
+  v.appendChild(searchWrap);
+  searchWrap.querySelector('#task-search').oninput = (e) => {
+    state.taskFilter.search = e.target.value;
+    renderTaskList();
+  };
+
+  // MIT block
+  const mit = el(`
+    <div class="mit-block">
+      <div class="mit-head">
+        <div class="mit-title">🎯 Bugungi 3 ta muhim</div>
+      </div>
+      <div id="mit-list"></div>
+    </div>`);
+  v.appendChild(mit);
+
+  // Time filters
+  const tFilter = el(`<div class="chip-row" id="time-filter"></div>`);
+  const tOpts = [['today', 'Bugun'], ['tomorrow', 'Ertaga'], ['week', 'Bu hafta'], ['all', 'Barchasi'], ['done', 'Bajarilgan']];
+  for (const [k, l] of tOpts) {
+    const c = el(`<button class="chip ${state.taskFilter.time === k ? 'active' : ''}" data-k="${k}">${l}</button>`);
+    c.onclick = () => { state.taskFilter.time = k; renderTasks(); };
+    tFilter.appendChild(c);
+  }
+  v.appendChild(tFilter);
+
+  // Status filters
+  const sFilter = el(`<div class="chip-row" id="status-filter"></div>`);
+  const sOpts = [['all', 'Hammasi'], ['important', '🚩 Muhim'], ['todo', '✓ Bajariladi'], ['delegated', '👥 Topshirildi']];
+  for (const [k, l] of sOpts) {
+    const c = el(`<button class="chip ${state.taskFilter.status === k ? 'active' : ''}">${l}</button>`);
+    c.onclick = () => { state.taskFilter.status = k; renderTasks(); };
+    sFilter.appendChild(c);
+  }
+  v.appendChild(sFilter);
+
+  // List
+  const list = el(`<div id="task-list"></div>`);
+  v.appendChild(list);
+
+  renderTaskList();
+}
+
+function renderTaskList() {
+  // MIT
+  const mitList = document.getElementById('mit-list');
+  if (!mitList) return;
+  const today = todayKey();
+  const mitTasks = state.data.tasks.filter(t => t.isMIT && t.mitDate === today && !t.completed && !t.archived).slice(0, 3);
+  mitList.innerHTML = '';
+  if (mitTasks.length === 0) {
+    mitList.appendChild(el(`<div class="mit-empty">Bugungi eng muhim 3 ta vazifani belgilang. Vazifa detalida "MIT ga qo'shish".</div>`));
+  } else {
+    mitTasks.forEach(t => mitList.appendChild(taskCard(t)));
+  }
+
+  // Main list
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  const filtered = filterTasks();
+  if (filtered.length === 0) {
+    list.appendChild(el(`<div class="empty-state"><div class="emoji">🎯</div><div class="text">Bu yerda vazifa yo'q.<br/>O'ng pastdagi "+" tugmasi orqali qo'shing.</div></div>`));
+    return;
+  }
+  filtered.forEach(t => list.appendChild(taskCard(t)));
+}
+
+function filterTasks() {
+  const f = state.taskFilter;
+  const today = todayKey();
+  const tomorrow = dateKey(addDays(new Date(), 1));
+  const weekEnd = dateKey(addDays(new Date(), 7));
+  const term = f.search.trim().toLowerCase();
+
+  return state.data.tasks.filter(t => {
+    if (t.archived) return false;
+    if (f.time === 'done') { if (!t.completed) return false; }
+    else if (t.completed) return false;
+    if (f.time === 'today') {
+      if (!t.deadline) return true; // bugungi deb hisoblanadi
+      const dk = t.deadline.slice(0, 10);
+      if (dk > today) return false;
+    } else if (f.time === 'tomorrow') {
+      if (!t.deadline || t.deadline.slice(0, 10) !== tomorrow) return false;
+    } else if (f.time === 'week') {
+      if (!t.deadline) return false;
+      const dk = t.deadline.slice(0, 10);
+      if (dk > weekEnd) return false;
+    }
+    if (f.status !== 'all' && t.status !== f.status) return false;
+    if (term && !(t.title || '').toLowerCase().includes(term) && !(t.notes || '').toLowerCase().includes(term)) return false;
+    return true;
+  }).sort((a, b) => {
+    // Important first, then by deadline, then by createdAt
+    const pr = { important: 0, todo: 1, delegated: 2 };
+    if (pr[a.status] !== pr[b.status]) return pr[a.status] - pr[b.status];
+    if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+    return (a.createdAt || '').localeCompare(b.createdAt || '');
+  });
+}
+
+function taskCard(t) {
+  const subDone = (t.subtasks || []).filter(s => s.done).length;
+  const subTotal = (t.subtasks || []).length;
+  const badgeMap = {
+    important: '<span class="badge badge-important">🚩 Eng muhim</span>',
+    todo: '<span class="badge badge-todo">✓ Bajariladi</span>',
+    delegated: '<span class="badge badge-delegated">👥 Topshirildi</span>',
+  };
+  let metaParts = [badgeMap[t.status] || ''];
+  if (t.deadline) {
+    const dl = new Date(t.deadline);
+    const tm = String(dl.getHours()).padStart(2, '0') + ':' + String(dl.getMinutes()).padStart(2, '0');
+    metaParts.push(`<span class="badge badge-meta">📅 ${dateKey(dl) === todayKey() ? '' : formatDateShort(dl) + ' '}${tm}</span>`);
+  }
+  if (subTotal > 0) metaParts.push(`<span class="badge badge-meta">${subDone}/${subTotal} subtask</span>`);
+  if (t.category) metaParts.push(`<span class="cat-tag">#${escapeHtml(t.category)}</span>`);
+
+  const card = el(`
+    <div class="task-card ${t.completed ? 'completed' : ''}" data-id="${t.id}">
+      <button class="task-check" aria-label="Bajarildi">${icons.check}</button>
+      <div class="task-body">
+        <div class="task-title">${escapeHtml(t.title)}</div>
+        <div class="task-meta">${metaParts.join('')}</div>
+      </div>
+    </div>`);
+  card.querySelector('.task-check').onclick = (e) => {
+    e.stopPropagation();
+    toggleTaskComplete(t.id);
+  };
+  card.onclick = () => openTaskDetail(t.id);
+  return card;
+}
+
+function toggleTaskComplete(id) {
+  const t = state.data.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.completed = !t.completed;
+  t.completedAt = t.completed ? new Date().toISOString() : null;
+  vibrate(10);
+  saveState();
+  renderTaskList();
+  if (t.completed) {
+    setTimeout(() => showToast("Vazifa bajarildi! 🎉"), 100);
+  }
+}
+
+function createTask(opts = {}) {
+  const t = {
+    id: uid(),
+    title: opts.title || '',
+    status: opts.status || 'todo',
+    completed: false,
+    category: opts.category || '',
+    deadline: opts.deadline || null,
+    notes: '',
+    subtasks: [],
+    isMIT: false,
+    mitDate: null,
+    createdAt: new Date().toISOString(),
+    completedAt: null,
+    pomodoroCount: 0,
+    archived: false,
+  };
+  state.data.tasks.unshift(t);
+  saveState();
+  return t;
+}
+
+function openQuickAdd() {
+  const content = el(`
+    <div>
+      <div class="modal-head">
+        <button class="icon-btn" id="cnc">${icons.x}</button>
+        <div class="modal-title">Yangi vazifa</div>
+        <button class="btn btn-primary" id="save" style="min-height:36px;padding:6px 14px;">Yaratish</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <input class="input" id="t-title" placeholder="Vazifa nomi..." autofocus/>
+        </div>
+        <div class="form-section">
+          <label class="form-label">Status</label>
+          <div class="status-picker" id="t-status">
+            <button class="status-opt important" data-v="important"><span class="opt-icon">🚩</span>Muhim</button>
+            <button class="status-opt todo active" data-v="todo"><span class="opt-icon">✓</span>Bajariladi</button>
+            <button class="status-opt delegated" data-v="delegated"><span class="opt-icon">👥</span>Topshirildi</button>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">Tezkor deadline</label>
+          <div class="chip-row" id="t-deadline">
+            <button class="chip" data-v="">Yo'q</button>
+            <button class="chip active" data-v="today">Bugun</button>
+            <button class="chip" data-v="tomorrow">Ertaga</button>
+            <button class="chip" data-v="week">1 hafta</button>
+          </div>
+        </div>
+      </div>
+    </div>`);
+  openSheet(content);
+
+  let status = 'todo';
+  let deadline = 'today';
+
+  content.querySelectorAll('#t-status .status-opt').forEach(b => {
+    b.onclick = () => {
+      content.querySelectorAll('#t-status .status-opt').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      status = b.dataset.v;
+    };
+  });
+  content.querySelectorAll('#t-deadline .chip').forEach(b => {
+    b.onclick = () => {
+      content.querySelectorAll('#t-deadline .chip').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      deadline = b.dataset.v;
+    };
+  });
+
+  const titleInput = content.querySelector('#t-title');
+  setTimeout(() => titleInput.focus(), 100);
+
+  function save() {
+    const title = titleInput.value.trim();
+    if (!title) { titleInput.focus(); return; }
+    let dl = null;
+    if (deadline === 'today') { const d = new Date(); d.setHours(23, 59, 0, 0); dl = d.toISOString().slice(0, 16); }
+    else if (deadline === 'tomorrow') { const d = addDays(new Date(), 1); d.setHours(23, 59, 0, 0); dl = d.toISOString().slice(0, 16); }
+    else if (deadline === 'week') { const d = addDays(new Date(), 7); d.setHours(23, 59, 0, 0); dl = d.toISOString().slice(0, 16); }
+    createTask({ title, status, deadline: dl });
+    closeSheet();
+    renderTaskList();
+    showToast("Vazifa qo'shildi");
+  }
+
+  content.querySelector('#cnc').onclick = closeSheet;
+  content.querySelector('#save').onclick = save;
+  titleInput.onkeydown = (e) => { if (e.key === 'Enter') save(); };
+}
+
+function openTaskDetail(id) {
+  const t = state.data.tasks.find(x => x.id === id);
+  if (!t) return;
+  const cats = state.data.categories;
+  const dlValue = t.deadline ? t.deadline.slice(0, 16) : '';
+
+  const content = el(`
+    <div>
+      <div class="modal-head">
+        <button class="icon-btn" id="back">${icons.back}</button>
+        <div class="modal-title">Vazifa</div>
+        <button class="icon-btn" id="del" style="color:var(--danger);">${icons.trash}</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <input class="input" id="t-title" value="${escapeHtml(t.title)}" placeholder="Vazifa nomi..." style="font-size:18px;font-weight:600;"/>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Status</label>
+          <div class="status-picker" id="t-status">
+            <button class="status-opt important ${t.status==='important'?'active':''}" data-v="important"><span class="opt-icon">🚩</span>Muhim</button>
+            <button class="status-opt todo ${t.status==='todo'?'active':''}" data-v="todo"><span class="opt-icon">✓</span>Bajariladi</button>
+            <button class="status-opt delegated ${t.status==='delegated'?'active':''}" data-v="delegated"><span class="opt-icon">👥</span>Topshirildi</button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Deadline</label>
+          <input class="input" type="datetime-local" id="t-deadline" value="${dlValue}"/>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Kategoriya</label>
+          <div class="chip-row" id="t-cat">
+            <button class="chip ${!t.category?'active':''}" data-v="">Yo'q</button>
+            ${cats.map(c => `<button class="chip ${t.category===c?'active':''}" data-v="${escapeHtml(c)}">#${escapeHtml(c)}</button>`).join('')}
+            <button class="chip" id="add-cat">+ Yangi</button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Subtasklar (${(t.subtasks||[]).filter(s=>s.done).length}/${(t.subtasks||[]).length})</label>
+          <div id="subtasks" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px 12px;"></div>
+          <button class="btn btn-ghost btn-block" id="add-sub" style="margin-top:6px;justify-content:flex-start;">+ Subtask qo'shish</button>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Izoh</label>
+          <textarea class="textarea" id="t-notes" placeholder="Vazifa haqida qo'shimcha...">${escapeHtml(t.notes || '')}</textarea>
+        </div>
+
+        <div class="form-section">
+          <button class="btn btn-secondary btn-block" id="mit-btn">${t.isMIT && t.mitDate === todayKey() ? '⭐ MIT dan olib tashlash' : '⭐ Bugungi MIT ga qo\'shish'}</button>
+        </div>
+
+        <div class="form-section">
+          <button class="btn btn-primary btn-block" id="pomo-btn">🍅 Pomodoro boshlash (25 daq)</button>
+        </div>
+      </div>
+    </div>`);
+
+  openSheet(content, { full: true });
+
+  function commit() { saveState(); }
+
+  content.querySelector('#back').onclick = () => { closeSheet(); renderTaskList(); };
+  content.querySelector('#del').onclick = () => {
+    confirmDialog("Vazifani o'chirmoqchimisiz? Bekor qilish 5 soniya davom etadi.", () => {
+      const idx = state.data.tasks.findIndex(x => x.id === id);
+      if (idx < 0) return;
+      const removed = state.data.tasks.splice(idx, 1)[0];
+      saveState();
+      closeSheet();
+      renderTaskList();
+      showToast("Vazifa o'chirildi", "BEKOR QILISH", () => {
+        state.data.tasks.splice(idx, 0, removed);
+        saveState();
+        renderTaskList();
+      });
+    });
+  };
+
+  const titleEl = content.querySelector('#t-title');
+  titleEl.oninput = () => { t.title = titleEl.value; commit(); };
+
+  content.querySelectorAll('#t-status .status-opt').forEach(b => {
+    b.onclick = () => {
+      content.querySelectorAll('#t-status .status-opt').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      t.status = b.dataset.v;
+      commit();
+    };
+  });
+
+  const dlEl = content.querySelector('#t-deadline');
+  dlEl.onchange = () => {
+    t.deadline = dlEl.value || null;
+    commit();
+  };
+
+  content.querySelectorAll('#t-cat .chip').forEach(b => {
+    if (b.id === 'add-cat') return;
+    b.onclick = () => {
+      content.querySelectorAll('#t-cat .chip').forEach(x => { if (x.id !== 'add-cat') x.classList.remove('active'); });
+      b.classList.add('active');
+      t.category = b.dataset.v;
+      commit();
+    };
+  });
+  content.querySelector('#add-cat').onclick = () => {
+    const name = prompt("Yangi kategoriya nomi:");
+    if (name && name.trim()) {
+      const c = name.trim();
+      if (!state.data.categories.includes(c)) state.data.categories.push(c);
+      t.category = c;
+      commit();
+      closeSheet();
+      openTaskDetail(id);
+    }
+  };
+
+  function renderSubtasks() {
+    const wrap = content.querySelector('#subtasks');
+    wrap.innerHTML = '';
+    if (!t.subtasks) t.subtasks = [];
+    if (t.subtasks.length === 0) {
+      wrap.appendChild(el(`<div style="padding:12px 0;color:var(--text-light);font-size:13px;">Hozircha subtask yo'q</div>`));
+      return;
+    }
+    t.subtasks.forEach((s, idx) => {
+      const row = el(`
+        <div class="subtask ${s.done?'done':''}">
+          <button class="subtask-check">${icons.check}</button>
+          <input class="subtask-input" value="${escapeHtml(s.title)}"/>
+          <button class="subtask-del">${icons.x}</button>
+        </div>`);
+      row.querySelector('.subtask-check').onclick = () => { s.done = !s.done; vibrate(8); commit(); renderSubtasks(); };
+      row.querySelector('.subtask-input').oninput = (e) => { s.title = e.target.value; commit(); };
+      row.querySelector('.subtask-del').onclick = () => { t.subtasks.splice(idx, 1); commit(); renderSubtasks(); };
+      wrap.appendChild(row);
+    });
+  }
+  renderSubtasks();
+
+  content.querySelector('#add-sub').onclick = () => {
+    t.subtasks.push({ id: uid(), title: '', done: false });
+    commit();
+    renderSubtasks();
+    const inputs = content.querySelectorAll('.subtask-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  };
+
+  const notesEl = content.querySelector('#t-notes');
+  notesEl.oninput = () => { t.notes = notesEl.value; commit(); };
+
+  content.querySelector('#mit-btn').onclick = () => {
+    if (t.isMIT && t.mitDate === todayKey()) {
+      t.isMIT = false;
+      t.mitDate = null;
+      showToast("MIT dan olib tashlandi");
+    } else {
+      const mitCount = state.data.tasks.filter(x => x.isMIT && x.mitDate === todayKey() && !x.completed && x.id !== id).length;
+      if (mitCount >= 3) {
+        showToast("Bir kunda eng ko'pi 3 ta MIT bo'la oladi");
+        return;
+      }
+      t.isMIT = true;
+      t.mitDate = todayKey();
+      showToast("Bugungi MIT ga qo'shildi ⭐");
+    }
+    commit();
+    closeSheet();
+    openTaskDetail(id);
+  };
+
+  content.querySelector('#pomo-btn').onclick = () => {
+    closeSheet();
+    openPomodoro(t.id);
+  };
+}
+
+/* ============================================================
+   === CHECKLIST ===
+   ============================================================ */
+function renderChecklist() {
+  const v = document.getElementById('view-checklist');
+  v.innerHTML = '';
+  const dk = state.currentDate;
+
+  // Date nav
+  v.appendChild(buildDateNav(dk, (nk) => { state.currentDate = nk; renderChecklist(); }));
+
+  // Stats
+  const todayData = state.data.checklist.days[dk] || {};
+  const items = [...state.data.checklist.items].sort((a, b) => a.order - b.order);
+  const total = items.length;
+  const done = items.filter(i => todayData[i.id]).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const streak = computeStreak();
+
+  const stats = el(`
+    <div class="checklist-stats">
+      <div class="stat-card">
+        <div class="progress-ring">
+          <div class="ring-wrap">
+            <svg width="56" height="56">
+              <circle cx="28" cy="28" r="24" stroke="${'#E4E4E7'}" stroke-width="6" fill="none"/>
+              <circle cx="28" cy="28" r="24" stroke="${'#16A34A'}" stroke-width="6" fill="none"
+                stroke-dasharray="${(2*Math.PI*24).toFixed(2)}"
+                stroke-dashoffset="${(2*Math.PI*24 * (1 - pct/100)).toFixed(2)}"
+                stroke-linecap="round"/>
+            </svg>
+            <div class="ring-text">${pct}%</div>
+          </div>
+          <div class="progress-right">
+            <div class="big">${done}/${total}</div>
+            <div class="small">bajarildi</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="progress-ring" style="justify-content:flex-start;">
+          <div class="streak-emoji">🔥</div>
+          <div class="streak-text-wrap">
+            <div class="big">${streak} kun</div>
+            <div class="small">ketma-ket</div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+  v.appendChild(stats);
+
+  // Habits list
+  const list = el('<div id="habit-list"></div>');
+  items.forEach(h => {
+    const isDone = !!todayData[h.id];
+    const spark = buildSparkline(h.id);
+    const row = el(`
+      <div class="habit-row ${isDone?'done':''}">
+        <div class="habit-emoji">${h.emoji}</div>
+        <div class="habit-info">
+          <div class="habit-name">${escapeHtml(h.name)}</div>
+          <div class="habit-spark">${spark}</div>
+        </div>
+        <button class="habit-check">${icons.check}</button>
+      </div>`);
+    row.onclick = () => {
+      todayData[h.id] = !todayData[h.id];
+      state.data.checklist.days[dk] = todayData;
+      vibrate(12);
+      saveState();
+      const wasAllDone = items.every(i => todayData[i.id]);
+      renderChecklist();
+      if (wasAllDone && todayData[h.id]) confetti();
+    };
+    list.appendChild(row);
+  });
+  v.appendChild(list);
+}
+
+function buildSparkline(habitId) {
+  // oxirgi 7 kun
+  let html = '';
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(today, -i);
+    const k = dateKey(d);
+    const done = state.data.checklist.days[k] && state.data.checklist.days[k][habitId];
+    const isT = k === todayKey();
+    html += `<span class="spark-dot ${done?'done':''} ${isT?'today':''}"></span>`;
+  }
+  return html;
+}
+
+function computeStreak() {
+  let s = 0;
+  const items = state.data.checklist.items;
+  if (items.length === 0) return 0;
+  let cursor = new Date();
+  // Start from today; if today not all done, check yesterday-based streak
+  for (let i = 0; i < 366; i++) {
+    const k = dateKey(cursor);
+    const day = state.data.checklist.days[k] || {};
+    const allDone = items.every(it => day[it.id]);
+    if (allDone) s++;
+    else { if (i === 0) { /* today not full — keep checking yesterday */ } else break; }
+    cursor = addDays(cursor, -1);
+  }
+  return s;
+}
+
+function buildDateNav(dk, onChange) {
+  const d = parseKey(dk);
+  const isT = dk === todayKey();
+  const nav = el(`
+    <div class="date-nav">
+      <button class="nav-arrow" id="prev">${icons.chevL}</button>
+      <button style="flex:1;background:none;">
+        <div class="date-label">${formatDateUz(d)}</div>
+        <div class="date-sub">${isT ? 'Bugun' : (dk === dateKey(addDays(new Date(), -1)) ? 'Kecha' : '')}</div>
+      </button>
+      <button class="nav-arrow" id="next" ${isFuture(dateKey(addDays(d, 1))) ? 'style="opacity:0.4"' : ''}>${icons.chevR}</button>
+    </div>`);
+  nav.querySelector('#prev').onclick = () => onChange(dateKey(addDays(d, -1)));
+  nav.querySelector('#next').onclick = () => {
+    const nk = dateKey(addDays(d, 1));
+    if (!isFuture(nk)) onChange(nk);
+  };
+  return nav;
+}
+
+function openHabitsManager() {
+  const items = [...state.data.checklist.items].sort((a, b) => a.order - b.order);
+  const content = el(`
+    <div>
+      <div class="modal-head">
+        <button class="icon-btn" id="close">${icons.x}</button>
+        <div class="modal-title">Odatlar (habitlar)</div>
+        <span></span>
+      </div>
+      <div class="modal-body">
+        <div id="hlist"></div>
+        <button class="btn btn-primary btn-block" id="add" style="margin-top:12px;">+ Yangi habit qo'shish</button>
+      </div>
+    </div>`);
+  openSheet(content, { full: true });
+
+  function render() {
+    const list = content.querySelector('#hlist');
+    list.innerHTML = '';
+    items.forEach((h, idx) => {
+      const row = el(`
+        <div class="row" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;gap:8px;">
+          <input value="${escapeHtml(h.emoji)}" class="input" style="width:50px;text-align:center;padding:8px;" maxlength="2"/>
+          <input value="${escapeHtml(h.name)}" class="input" style="flex:1;padding:8px;"/>
+          <button class="icon-btn up" aria-label="Yuqoriga">${icons.chevL}</button>
+          <button class="icon-btn down" aria-label="Pastga">${icons.chevR}</button>
+          <button class="icon-btn del" style="color:var(--danger);">${icons.trash}</button>
+        </div>`);
+      const [emoEl, nameEl, upBtn, downBtn, delBtn] = row.querySelectorAll('input, button');
+      emoEl.oninput = () => { h.emoji = emoEl.value; saveState(); };
+      nameEl.oninput = () => { h.name = nameEl.value; saveState(); };
+      upBtn.style.transform = 'rotate(90deg)';
+      downBtn.style.transform = 'rotate(90deg)';
+      upBtn.onclick = () => {
+        if (idx === 0) return;
+        const a = items[idx], b = items[idx - 1];
+        a.order--; b.order++;
+        items.sort((x, y) => x.order - y.order);
+        saveState(); render();
+      };
+      downBtn.onclick = () => {
+        if (idx === items.length - 1) return;
+        const a = items[idx], b = items[idx + 1];
+        a.order++; b.order--;
+        items.sort((x, y) => x.order - y.order);
+        saveState(); render();
+      };
+      delBtn.onclick = () => {
+        confirmDialog(`"${h.name}" habitini o'chirasizmi?`, () => {
+          const i2 = state.data.checklist.items.findIndex(x => x.id === h.id);
+          if (i2 >= 0) state.data.checklist.items.splice(i2, 1);
+          items.splice(idx, 1);
+          // re-index orders
+          state.data.checklist.items.forEach((it, i) => it.order = i);
+          saveState(); render();
+        });
+      };
+      list.appendChild(row);
+    });
+  }
+  render();
+
+  content.querySelector('#close').onclick = () => { closeSheet(); renderChecklist(); };
+  content.querySelector('#add').onclick = () => {
+    const newH = { id: uid(), emoji: '✨', name: 'Yangi habit', order: items.length };
+    state.data.checklist.items.push(newH);
+    items.push(newH);
+    saveState();
+    render();
+  };
+}
+
+function confetti() {
+  const colors = ['#16A34A', '#2563EB', '#F59E0B', '#DC2626', '#8B5CF6'];
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDelay = (Math.random() * 0.4) + 's';
+    p.style.animationDuration = (1.6 + Math.random() * 0.8) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2800);
+  }
+  vibrate([20, 40, 20]);
+}
+
+/* ============================================================
+   === KAYZEN ===
+   ============================================================ */
+let _kayzenSaveTimer = null;
+function renderKayzen() {
+  const v = document.getElementById('view-kayzen');
+  v.innerHTML = '';
+  const dk = state.kayzenDate;
+
+  v.appendChild(buildDateNav(dk, (nk) => { state.kayzenDate = nk; renderKayzen(); }));
+
+  v.appendChild(el(`<div class="kayzen-intro">10 daqiqa ajratib, o'zingiz bilan mulohaza qiling. Avtomatik saqlanadi.</div>`));
+
+  const questions = [...state.data.kayzen.questions].sort((a, b) => a.order - b.order);
+  if (questions.length === 0) {
+    v.appendChild(el(`<div class="empty-state"><div class="emoji">🧘</div><div class="text">Savollar yo'q. Sozlamalar orqali savol qo'shing.</div></div>`));
+    return;
+  }
+
+  const entry = state.data.kayzen.entries[dk] || {};
+  questions.forEach(q => {
+    const val = entry[q.id] || '';
+    const card = el(`
+      <div class="kayzen-q">
+        <div class="q-text">${escapeHtml(q.text)}</div>
+        <textarea class="textarea" placeholder="Javobingizni yozing..." data-qid="${q.id}">${escapeHtml(val)}</textarea>
+        <div class="save-indicator" data-qid="${q.id}">✓ Saqlandi</div>
+      </div>`);
+    const ta = card.querySelector('textarea');
+    ta.style.height = 'auto';
+    setTimeout(() => { ta.style.height = ta.scrollHeight + 'px'; }, 30);
+    ta.oninput = () => {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+      if (!state.data.kayzen.entries[dk]) state.data.kayzen.entries[dk] = {};
+      state.data.kayzen.entries[dk][q.id] = ta.value;
+      const ind = card.querySelector('.save-indicator');
+      clearTimeout(_kayzenSaveTimer);
+      _kayzenSaveTimer = setTimeout(() => {
+        saveState();
+        ind.classList.add('show');
+        setTimeout(() => ind.classList.remove('show'), 1500);
+      }, 500);
+    };
+    v.appendChild(card);
+  });
+}
+
+function openKayzenManager() {
+  const questions = [...state.data.kayzen.questions].sort((a, b) => a.order - b.order);
+  const content = el(`
+    <div>
+      <div class="modal-head">
+        <button class="icon-btn" id="close">${icons.x}</button>
+        <div class="modal-title">Savollar</div>
+        <span></span>
+      </div>
+      <div class="modal-body">
+        <div id="qlist"></div>
+        <button class="btn btn-primary btn-block" id="add" style="margin-top:12px;">+ Yangi savol qo'shish</button>
+      </div>
+    </div>`);
+  openSheet(content, { full: true });
+
+  function render() {
+    const list = content.querySelector('#qlist');
+    list.innerHTML = '';
+    questions.forEach((q, idx) => {
+      const row = el(`
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;">
+          <textarea class="textarea" style="margin-bottom:6px;min-height:60px;">${escapeHtml(q.text)}</textarea>
+          <div class="row" style="gap:6px;">
+            <button class="btn btn-secondary up" style="flex:1;min-height:36px;padding:6px;">↑</button>
+            <button class="btn btn-secondary down" style="flex:1;min-height:36px;padding:6px;">↓</button>
+            <button class="btn btn-danger del" style="flex:1;min-height:36px;padding:6px;">O'chirish</button>
+          </div>
+        </div>`);
+      const ta = row.querySelector('textarea');
+      ta.oninput = () => { q.text = ta.value; saveState(); };
+      row.querySelector('.up').onclick = () => {
+        if (idx === 0) return;
+        const a = questions[idx], b = questions[idx - 1];
+        const ao = a.order, bo = b.order;
+        a.order = bo; b.order = ao;
+        questions.sort((x, y) => x.order - y.order);
+        saveState(); render();
+      };
+      row.querySelector('.down').onclick = () => {
+        if (idx === questions.length - 1) return;
+        const a = questions[idx], b = questions[idx + 1];
+        const ao = a.order, bo = b.order;
+        a.order = bo; b.order = ao;
+        questions.sort((x, y) => x.order - y.order);
+        saveState(); render();
+      };
+      row.querySelector('.del').onclick = () => {
+        confirmDialog("Savolni o'chirasizmi? Eski javoblar saqlanib qoladi.", () => {
+          const i2 = state.data.kayzen.questions.findIndex(x => x.id === q.id);
+          if (i2 >= 0) state.data.kayzen.questions.splice(i2, 1);
+          questions.splice(idx, 1);
+          state.data.kayzen.questions.forEach((it, i) => it.order = i);
+          saveState(); render();
+        });
+      };
+      list.appendChild(row);
+    });
+  }
+  render();
+
+  content.querySelector('#close').onclick = () => { closeSheet(); renderKayzen(); };
+  content.querySelector('#add').onclick = () => {
+    const q = { id: uid(), text: 'Yangi savol', order: questions.length };
+    state.data.kayzen.questions.push(q);
+    questions.push(q);
+    saveState();
+    render();
+  };
+}
+
+function openKayzenArchive() {
+  const entries = Object.entries(state.data.kayzen.entries)
+    .filter(([k, v]) => Object.values(v).some(x => x && x.trim()))
+    .sort((a, b) => b[0].localeCompare(a[0]));
+
+  const content = el(`
+    <div>
+      <div class="modal-head">
+        <button class="icon-btn" id="close">${icons.x}</button>
+        <div class="modal-title">Arxiv</div>
+        <button class="icon-btn" id="exp" aria-label="Eksport">${icons.download}</button>
+      </div>
+      <div class="modal-body" id="abody"></div>
+    </div>`);
+  openSheet(content, { full: true });
+
+  const body = content.querySelector('#abody');
+  if (entries.length === 0) {
+    body.appendChild(el(`<div class="empty-state"><div class="emoji">📚</div><div class="text">Hozircha yozuvlar yo'q</div></div>`));
+  } else {
+    entries.forEach(([k, ans]) => {
+      const firstQ = state.data.kayzen.questions.find(q => ans[q.id] && ans[q.id].trim());
+      const preview = firstQ ? ans[firstQ.id].slice(0, 100) : '';
+      const card = el(`
+        <div class="arch-card">
+          <div class="date">${formatDateUz(parseKey(k))}</div>
+          <div class="preview">${escapeHtml(preview)}${preview.length >= 100 ? '...' : ''}</div>
+        </div>`);
+      card.onclick = () => { state.kayzenDate = k; closeSheet(); renderKayzen(); };
+      body.appendChild(card);
+    });
+  }
+
+  content.querySelector('#close').onclick = closeSheet;
+  content.querySelector('#exp').onclick = () => {
+    let md = '# Kayzen jurnali — eksport\n\n';
+    entries.forEach(([k, ans]) => {
+      md += '## ' + formatDateUz(parseKey(k)) + '\n\n';
+      state.data.kayzen.questions.forEach(q => {
+        if (ans[q.id] && ans[q.id].trim()) {
+          md += '**' + q.text + '**\n\n' + ans[q.id] + '\n\n';
+        }
+      });
+      md += '---\n\n';
+    });
+    downloadFile('kayzen-arxiv.md', md, 'text/markdown');
+  };
+}
+
+/* ============================================================
+   === STATS ===
+   ============================================================ */
+let _statsChart = null;
+function renderStats() {
+  const v = document.getElementById('view-stats');
+  v.innerHTML = '';
+
+  const today = todayKey();
+  const todayData = state.data.checklist.days[today] || {};
+  const items = state.data.checklist.items;
+  const cDone = items.filter(i => todayData[i.id]).length;
+  const cPct = items.length ? Math.round(cDone / items.length * 100) : 0;
+  const tasksActive = state.data.tasks.filter(t => !t.completed && !t.archived).length;
+  const tasksDoneToday = state.data.tasks.filter(t => t.completed && t.completedAt && t.completedAt.slice(0, 10) === today).length;
+  const pomoToday = state.data.pomodoro.sessions.filter(s => s.date === today).reduce((a, b) => a + b.minutes, 0);
+  const kayzenDone = state.data.kayzen.entries[today] && Object.values(state.data.kayzen.entries[today]).some(x => x && x.trim());
+
+  // Bugungi xulosa
+  const today1 = el(`
+    <div class="stats-section">
+      <h3>Bugungi xulosa</h3>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Chek list</div><div class="value">${cDone}/${items.length}</div><div class="sub">${cPct}%</div></div>
+        <div class="stat-card"><div class="label">Vazifalar</div><div class="value">${tasksDoneToday}</div><div class="sub">bajarildi (${tasksActive} faol)</div></div>
+        <div class="stat-card"><div class="label">Pomodoro</div><div class="value">${pomoToday}<span style="font-size:13px;color:var(--text-muted);"> daq</span></div><div class="sub">fokus vaqti</div></div>
+        <div class="stat-card"><div class="label">Kayzen</div><div class="value">${kayzenDone ? '✓' : '—'}</div><div class="sub">${kayzenDone ? 'yozildi' : 'yozilmadi'}</div></div>
+      </div>
+    </div>`);
+  v.appendChild(today1);
+
+  // Haftalik chart
+  const wk = el(`
+    <div class="stats-section">
+      <h3>Oxirgi 7 kun — chek list</h3>
+      <div class="card"><canvas id="weekChart" height="160"></canvas></div>
+    </div>`);
+  v.appendChild(wk);
+
+  // Heatmap (oxirgi 12 hafta = ~84 kun)
+  const hmSection = el(`
+    <div class="stats-section">
+      <h3>Oylik faollik</h3>
+      <div class="heatmap" id="heatmap"></div>
+      <div class="heatmap-legend">
+        Kam <span class="swatch" style="background:#EFEFEF;"></span>
+        <span class="swatch" style="background:#BBF7D0;"></span>
+        <span class="swatch" style="background:#4ADE80;"></span>
+        <span class="swatch" style="background:#16A34A;"></span>
+        <span class="swatch" style="background:#14532D;"></span>
+         Ko'p
+      </div>
+    </div>`);
+  v.appendChild(hmSection);
+
+  // Habit darajalari
+  const habHead = el(`<div class="stats-section"><h3>Odat darajalari (oxirgi 30 kun)</h3><div id="habit-stats"></div></div>`);
+  v.appendChild(habHead);
+
+  // Pomodoro umumiy
+  const totalPomo = state.data.pomodoro.sessions.reduce((a, b) => a + b.minutes, 0);
+  const totalSessions = state.data.pomodoro.sessions.length;
+  const pomoSect = el(`
+    <div class="stats-section">
+      <h3>Pomodoro fokus</h3>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Jami sessiya</div><div class="value">${totalSessions}</div></div>
+        <div class="stat-card"><div class="label">Jami daqiqa</div><div class="value">${totalPomo}</div></div>
+      </div>
+    </div>`);
+  v.appendChild(pomoSect);
+
+  // Eksport tugmasi
+  const backup = el(`
+    <div class="stats-section">
+      <h3>Backup</h3>
+      <div class="row" style="gap:8px;">
+        <button class="btn btn-secondary btn-block" id="exp">${icons.download} Eksport</button>
+        <button class="btn btn-secondary btn-block" id="imp">${icons.upload} Import</button>
+      </div>
+    </div>`);
+  v.appendChild(backup);
+  backup.querySelector('#exp').onclick = exportAll;
+  backup.querySelector('#imp').onclick = importAll;
+
+  // Render after DOM
+  setTimeout(() => {
+    renderWeekChart();
+    renderHeatmap();
+    renderHabitStats();
+  }, 50);
+}
+
+function renderWeekChart() {
+  const ctx = document.getElementById('weekChart');
+  if (!ctx) return;
+  const labels = [];
+  const data = [];
+  const items = state.data.checklist.items;
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(new Date(), -i);
+    labels.push(formatDateShort(d));
+    const day = state.data.checklist.days[dateKey(d)] || {};
+    const done = items.filter(it => day[it.id]).length;
+    data.push(items.length ? Math.round(done / items.length * 100) : 0);
+  }
+  if (_statsChart) _statsChart.destroy();
+  if (typeof Chart === 'undefined') {
+    ctx.replaceWith(el('<div class="muted small">Grafik yuklanmadi (internet kerak)</div>'));
+    return;
+  }
+  _statsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '% bajarildi',
+        data,
+        backgroundColor: '#2563EB',
+        borderRadius: 6,
+        barThickness: 22,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y + '%' } } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%', font: { size: 11 }, color: '#71717A' }, grid: { color: '#F4F4F5' } },
+        x: { ticks: { font: { size: 11 }, color: '#71717A' }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+function renderHeatmap() {
+  const wrap = document.getElementById('heatmap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  // 84 kun, har bir hafta = ustun. Faktic: 12 hafta * 7 kun = 84
+  const today = new Date();
+  const items = state.data.checklist.items;
+  // har hafta uchun: yakshanba-shanba ustun yoki dushanba-yakshanba? Soddalik uchun gorizontal grid 7 ustun
+  const days = [];
+  for (let i = 83; i >= 0; i--) days.push(addDays(today, -i));
+  // grid is 7 columns wide (weekdays). We need to align: pad so that the latest week ends with today's weekday at right
+  const firstDow = days[0].getDay();
+  const pad = (firstDow + 6) % 7; // dushanba = 0 deb hisoblasak
+  // Actually simpler: just render 84 cells in 7-col grid with 12 rows
+  // Re-design: 7 columns (dushanba-yakshanba), 12 rows (haftalar)
+  // Calculate column for first day:
+  for (let i = 0; i < pad; i++) {
+    const ph = document.createElement('div');
+    ph.className = 'heatmap-cell';
+    ph.style.opacity = 0;
+    wrap.appendChild(ph);
+  }
+  days.forEach(d => {
+    const k = dateKey(d);
+    const day = state.data.checklist.days[k] || {};
+    const done = items.length ? items.filter(it => day[it.id]).length / items.length : 0;
+    let bg = '#EFEFEF';
+    if (done > 0 && done < 0.3) bg = '#BBF7D0';
+    else if (done < 0.6) bg = '#86EFAC';
+    else if (done < 0.9) bg = '#4ADE80';
+    else if (done >= 0.9) bg = '#16A34A';
+    const cell = document.createElement('div');
+    cell.className = 'heatmap-cell';
+    cell.style.background = bg;
+    cell.title = formatDateUz(d) + ' — ' + Math.round(done * 100) + '%';
+    cell.onclick = () => {
+      state.currentDate = k;
+      switchView('checklist');
+    };
+    wrap.appendChild(cell);
+  });
+}
+
+function renderHabitStats() {
+  const wrap = document.getElementById('habit-stats');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const items = [...state.data.checklist.items].sort((a, b) => a.order - b.order);
+  items.forEach(h => {
+    let done = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let cur = 0;
+    for (let i = 29; i >= 0; i--) {
+      const k = dateKey(addDays(new Date(), -i));
+      const v = state.data.checklist.days[k] && state.data.checklist.days[k][h.id];
+      if (v) { done++; cur++; maxStreak = Math.max(maxStreak, cur); }
+      else cur = 0;
+    }
+    // Current streak from today backwards
+    let curS = 0;
+    for (let i = 0; i < 365; i++) {
+      const k = dateKey(addDays(new Date(), -i));
+      const v = state.data.checklist.days[k] && state.data.checklist.days[k][h.id];
+      if (v) curS++;
+      else { if (i === 0) {} else break; }
+    }
+    const pct = Math.round(done / 30 * 100);
+    const row = el(`
+      <div class="habit-stat-row">
+        <div class="habit-stat-head">
+          <span style="font-size:18px;">${h.emoji}</span>
+          <span class="name">${escapeHtml(h.name)}</span>
+          <span class="pct">${pct}%</span>
+        </div>
+        <div class="bar"><div class="bar-fill" style="width:${pct}%;"></div></div>
+        <div class="habit-stat-meta">
+          <span>🔥 Hozir: ${curS} kun</span>
+          <span>⭐ Eng yaxshi: ${maxStreak} kun</span>
+        </div>
+      </div>`);
+    wrap.appendChild(row);
+  });
+}
+
+/* ============================================================
+   === POMODORO ===
+   ============================================================ */
+function openPomodoro(taskId = null) {
+  if (!state.pomodoro) {
+    state.pomodoro = {
+      running: false,
+      mode: 'work', // 'work' | 'short' | 'long'
+      secondsLeft: state.data.pomodoro.workMin * 60,
+      taskId,
+      sessionCount: 0,
+    };
+  }
+  if (taskId) state.pomodoro.taskId = taskId;
+
+  const task = state.pomodoro.taskId ? state.data.tasks.find(t => t.id === state.pomodoro.taskId) : null;
+
+  const content = el(`
+    <div class="modal-full">
+      <div class="modal-head" style="background:transparent;border:none;">
+        <button class="icon-btn" id="close">${icons.x}</button>
+        <div class="modal-title">Pomodoro</div>
+        <span></span>
+      </div>
+      <div class="pomo-screen">
+        <div class="pomo-mode" id="p-mode"></div>
+        <div class="pomo-time" id="p-time">25:00</div>
+        <div class="pomo-task" id="p-task">${task ? escapeHtml(task.title) : '&nbsp;'}</div>
+        <div class="pomo-controls">
+          <button class="pomo-btn" id="p-reset" aria-label="Qaytadan">${icons.reset}</button>
+          <button class="pomo-btn primary" id="p-toggle" aria-label="Boshlash">${icons.play}</button>
+          <button class="pomo-btn" id="p-skip" aria-label="O'tkazib yuborish">${icons.chevR}</button>
+        </div>
+        <div class="pomo-stats">
+          <div><div>Bugun</div><div class="s-val" id="p-today">0 daq</div></div>
+          <div><div>Sessiyalar</div><div class="s-val" id="p-sess">${state.pomodoro.sessionCount}</div></div>
+        </div>
+      </div>
+    </div>`);
+  // Replace standard modal frame
+  const host = document.getElementById('modal-host');
+  host.innerHTML = '';
+  const bd = el('<div class="modal-backdrop" style="background:#FEF3C7;"></div>');
+  const m = el('<div class="modal modal-full"></div>');
+  m.appendChild(content);
+  bd.appendChild(m);
+  host.appendChild(bd);
+  document.body.style.overflow = 'hidden';
+
+  function fmt(s) {
+    const m = Math.floor(s / 60), ss = s % 60;
+    return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+  }
+  function updateUI() {
+    const modeText = state.pomodoro.mode === 'work' ? 'FOKUS' : (state.pomodoro.mode === 'short' ? 'QISQA DAM' : 'UZOQ DAM');
+    content.querySelector('#p-mode').textContent = modeText;
+    content.querySelector('#p-time').textContent = fmt(state.pomodoro.secondsLeft);
+    content.querySelector('#p-toggle').innerHTML = state.pomodoro.running ? icons.pause : icons.play;
+    const today = todayKey();
+    const pomoToday = state.data.pomodoro.sessions.filter(s => s.date === today).reduce((a, b) => a + b.minutes, 0);
+    content.querySelector('#p-today').textContent = pomoToday + ' daq';
+    content.querySelector('#p-sess').textContent = state.pomodoro.sessionCount;
+  }
+  updateUI();
+
+  content.querySelector('#close').onclick = () => {
+    bd.remove();
+    document.body.style.overflow = '';
+  };
+  content.querySelector('#p-toggle').onclick = () => {
+    if (state.pomodoro.running) pausePomodoro();
+    else startPomodoro(updateUI);
+    updateUI();
+  };
+  content.querySelector('#p-reset').onclick = () => {
+    pausePomodoro();
+    state.pomodoro.secondsLeft = currentModeSeconds();
+    updateUI();
+  };
+  content.querySelector('#p-skip').onclick = () => {
+    pausePomodoro();
+    advancePomodoroMode();
+    updateUI();
+  };
+
+  // Live update
+  state.pomodoro._uiUpdate = updateUI;
+}
+
+function currentModeSeconds() {
+  const p = state.data.pomodoro;
+  const m = state.pomodoro.mode;
+  if (m === 'work') return p.workMin * 60;
+  if (m === 'short') return p.shortBreakMin * 60;
+  return p.longBreakMin * 60;
+}
+let _pomoTimer = null;
+function startPomodoro(onTick) {
+  state.pomodoro.running = true;
+  clearInterval(_pomoTimer);
+  _pomoTimer = setInterval(() => {
+    state.pomodoro.secondsLeft--;
+    if (state.pomodoro.secondsLeft <= 0) {
+      // Tamomlandi
+      clearInterval(_pomoTimer);
+      state.pomodoro.running = false;
+      onPomodoroDone();
+    }
+    if (state.pomodoro._uiUpdate) state.pomodoro._uiUpdate();
+  }, 1000);
+}
+function pausePomodoro() {
+  state.pomodoro.running = false;
+  clearInterval(_pomoTimer);
+}
+function advancePomodoroMode() {
+  if (state.pomodoro.mode === 'work') {
+    state.pomodoro.sessionCount++;
+    state.pomodoro.mode = (state.pomodoro.sessionCount % 4 === 0) ? 'long' : 'short';
+  } else {
+    state.pomodoro.mode = 'work';
+  }
+  state.pomodoro.secondsLeft = currentModeSeconds();
+}
+function onPomodoroDone() {
+  // Beep
+  try { playBeep(); } catch (e) {}
+  vibrate([200, 100, 200, 100, 400]);
+  if (Notification && Notification.permission === 'granted') {
+    new Notification('Pomodoro tugadi', { body: state.pomodoro.mode === 'work' ? 'Dam olishga vaqt' : 'Ishga qaytishga vaqt' });
+  }
+  if (state.pomodoro.mode === 'work') {
+    state.data.pomodoro.sessions.push({
+      date: todayKey(),
+      minutes: state.data.pomodoro.workMin,
+      taskId: state.pomodoro.taskId || null,
+      completedAt: new Date().toISOString(),
+    });
+    if (state.pomodoro.taskId) {
+      const t = state.data.tasks.find(x => x.id === state.pomodoro.taskId);
+      if (t) t.pomodoroCount = (t.pomodoroCount || 0) + 1;
+    }
+    saveState();
+  }
+  advancePomodoroMode();
+  if (state.pomodoro._uiUpdate) state.pomodoro._uiUpdate();
+}
+
+function playBeep() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.frequency.value = 880;
+  g.gain.value = 0.15;
+  o.start();
+  setTimeout(() => { o.frequency.value = 660; }, 150);
+  setTimeout(() => { o.stop(); ctx.close(); }, 350);
+}
+
+/* ============================================================
+   === SETTINGS / EXPORT / IMPORT ===
+   ============================================================ */
+function openSettings() {
+  const s = state.data.settings;
+  const content = el(`
+    <div>
+      <div class="modal-head">
+        <button class="icon-btn" id="close">${icons.x}</button>
+        <div class="modal-title">Sozlamalar</div>
+        <span></span>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <label class="form-label">Pomodoro</label>
+          <div class="settings-row"><div><div class="label">Ish davomiyligi</div></div>
+            <input type="number" id="p-w" class="input" style="width:80px;" min="5" max="90" value="${state.data.pomodoro.workMin}"/>
+          </div>
+          <div class="settings-row"><div><div class="label">Qisqa dam</div></div>
+            <input type="number" id="p-s" class="input" style="width:80px;" min="1" max="30" value="${state.data.pomodoro.shortBreakMin}"/>
+          </div>
+          <div class="settings-row"><div><div class="label">Uzoq dam</div></div>
+            <input type="number" id="p-l" class="input" style="width:80px;" min="5" max="60" value="${state.data.pomodoro.longBreakMin}"/>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Eslatmalar</label>
+          <div class="settings-row">
+            <div>
+              <div class="label">Brauzer notifikatsiya</div>
+              <div class="desc">Pomodoro va deadline uchun</div>
+            </div>
+            <button class="btn btn-secondary" id="notif">${Notification.permission === 'granted' ? 'Yoqilgan' : 'Yoqish'}</button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Ma'lumotlar</label>
+          <div class="settings-row" id="exp-row">
+            <div><div class="label">Eksport (backup)</div><div class="desc">JSON fayl yuklab oling</div></div>
+            ${icons.download}
+          </div>
+          <div class="settings-row" id="imp-row">
+            <div><div class="label">Import</div><div class="desc">Backup faylni qayta yuklash</div></div>
+            ${icons.upload}
+          </div>
+          <div class="settings-row" id="reset-row" style="border-color:var(--danger-soft);">
+            <div><div class="label" style="color:var(--danger);">Hammasini o'chirish</div><div class="desc">Barcha ma'lumotlar o'chiriladi</div></div>
+            <span style="color:var(--danger);">${icons.trash}</span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="muted small" style="text-align:center;padding:12px;">
+            Kayzen v1 · Telefon brauzer uchun PWA<br/>
+            Hamma ma'lumot shu telefonda saqlanadi
+          </div>
+        </div>
+      </div>
+    </div>`);
+  openSheet(content, { full: true });
+
+  content.querySelector('#close').onclick = closeSheet;
+  content.querySelector('#p-w').onchange = (e) => { state.data.pomodoro.workMin = Math.max(5, +e.target.value || 25); saveState(); };
+  content.querySelector('#p-s').onchange = (e) => { state.data.pomodoro.shortBreakMin = Math.max(1, +e.target.value || 5); saveState(); };
+  content.querySelector('#p-l').onchange = (e) => { state.data.pomodoro.longBreakMin = Math.max(5, +e.target.value || 15); saveState(); };
+  content.querySelector('#notif').onclick = async () => {
+    if (Notification.permission === 'granted') return;
+    const r = await Notification.requestPermission();
+    if (r === 'granted') {
+      state.data.settings.notificationsEnabled = true;
+      saveState();
+      showToast('Eslatmalar yoqildi');
+      closeSheet();
+    }
+  };
+  content.querySelector('#exp-row').onclick = exportAll;
+  content.querySelector('#imp-row').onclick = importAll;
+  content.querySelector('#reset-row').onclick = () => {
+    confirmDialog("Hamma ma'lumotlar o'chiriladi. Bu qaytarib bo'lmaydi. Davom etamizmi?", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      state.data = defaultData();
+      saveState();
+      closeSheet();
+      renderView();
+      showToast('Hamma ma\'lumot tozalandi');
+    });
+  };
+}
+
+function downloadFile(name, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+function exportAll() {
+  const name = `kayzen-backup-${todayKey()}.json`;
+  downloadFile(name, JSON.stringify(state.data, null, 2), 'application/json');
+  state.data.settings.lastBackupAt = new Date().toISOString();
+  saveState();
+  showToast('Backup yuklab olindi');
+}
+function importAll() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json';
+  inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!data.tasks && !data.checklist) throw new Error('Noto\'g\'ri format');
+        confirmDialog("Eski ma'lumotlar ustiga yoziladi. Davom etamizmi?", () => {
+          state.data = data;
+          saveState();
+          closeSheet();
+          renderView();
+          showToast('Backup tiklandi');
+        });
+      } catch (e) {
+        showToast("Noto'g'ri fayl");
+      }
+    };
+    reader.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ============================================================
+   === ONBOARDING / FIRST RUN ===
+   ============================================================ */
+function maybeOnboarding() {
+  if (state.data.settings.firstRunCompleted) return;
+  const content = el(`
+    <div>
+      <div class="modal-head" style="border:none;background:transparent;">
+        <span></span>
+        <div class="modal-title"></div>
+        <span></span>
+      </div>
+      <div class="modal-body" style="text-align:center;padding:24px;">
+        <div style="font-size:64px;margin-bottom:12px;">✓</div>
+        <h2 style="font-size:24px;font-weight:700;margin-bottom:8px;">Xush kelibsiz!</h2>
+        <p class="muted" style="margin-bottom:20px;">
+          Bu sizning shaxsiy samaradorlik ilovangiz.
+          Vazifalaringizni boshqaring, kunlik odatlarni kuzating va o'zingizni har kuni tahlil qiling.
+        </p>
+        <div style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
+          <div style="margin-bottom:8px;">📋 <b>Vazifalar</b> — subtask va status bilan</div>
+          <div style="margin-bottom:8px;">✅ <b>Chek list</b> — 14 ta kunlik odat</div>
+          <div style="margin-bottom:8px;">🧘 <b>Kayzen</b> — kunlik refleksiya</div>
+          <div>📊 <b>Statistika</b> — progress va streaklar</div>
+        </div>
+        <p class="muted small" style="margin-bottom:14px;">
+          📲 iPhone: <b>Share → Add to Home Screen</b><br/>
+          Android: Chrome menyuda <b>"Add to Home screen"</b>
+        </p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-primary btn-block" id="start">Boshlash</button>
+      </div>
+    </div>`);
+  openSheet(content);
+  content.querySelector('#start').onclick = () => {
+    state.data.settings.firstRunCompleted = true;
+    saveState();
+    closeSheet();
+  };
+}
+
+/* ============================================================
+   === NOTIFICATIONS / DEADLINES ===
+   ============================================================ */
+function checkDeadlines() {
+  if (Notification.permission !== 'granted') return;
+  const now = Date.now();
+  state.data.tasks.forEach(t => {
+    if (!t.deadline || t.completed) return;
+    const dl = new Date(t.deadline).getTime();
+    const diff = dl - now;
+    if (diff > 0 && diff < 60000 && !t._notified) {
+      t._notified = true;
+      new Notification('Vazifa muddati keldi', { body: t.title });
+    }
+  });
+}
+setInterval(checkDeadlines, 30000);
+
+/* ============================================================
+   === PWA: MANIFEST + SERVICE WORKER ===
+   ============================================================ */
+function installPWA() {
+  // Manifest as blob URL
+  const manifest = {
+    name: 'Kayzen — Samaradorlik',
+    short_name: 'Kayzen',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#FAFAF9',
+    theme_color: '#FAFAF9',
+    description: 'Shaxsiy samaradorlik ilovasi',
+    icons: [
+      { src: "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='#FAFAF9'/><path d='M54 100 L84 130 L142 70' stroke='#2563EB' stroke-width='18' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>"), sizes: '192x192', type: 'image/svg+xml' },
+      { src: "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='#FAFAF9'/><path d='M144 268 L224 348 L380 188' stroke='#2563EB' stroke-width='48' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>"), sizes: '512x512', type: 'image/svg+xml' },
+    ],
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = url;
+  document.head.appendChild(link);
+
+  // Service worker — only on http(s)
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    const swCode = `
+      const CACHE = 'kayzen-v1';
+      self.addEventListener('install', e => self.skipWaiting());
+      self.addEventListener('activate', e => self.clients.claim());
+      self.addEventListener('fetch', e => {
+        if (e.request.method !== 'GET') return;
+        e.respondWith(
+          caches.open(CACHE).then(cache =>
+            cache.match(e.request).then(cached =>
+              cached || fetch(e.request).then(fresh => {
+                if (fresh && fresh.status === 200 && fresh.type === 'basic') cache.put(e.request, fresh.clone());
+                return fresh;
+              }).catch(() => cached)
+            )
+          )
+        );
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  }
+}
+
+/* ============================================================
+   === INIT ===
+   ============================================================ */
+function init() {
+  installPWA();
+
+  // Tab buttons
+  document.querySelectorAll('.tab').forEach(b => {
+    b.onclick = () => switchView(b.dataset.view);
+  });
+  // FAB
+  document.getElementById('fab').onclick = () => {
+    if (state.currentView === 'tasks') openQuickAdd();
+    else if (state.currentView === 'checklist') openHabitsManager();
+    else if (state.currentView === 'kayzen') openKayzenManager();
+    else if (state.currentView === 'stats') exportAll();
+  };
+
+  // Initial render
+  renderTopbar();
+  renderView();
+
+  // Onboarding
+  if (!state.data.settings.firstRunCompleted) {
+    setTimeout(maybeOnboarding, 400);
+  }
+
+  // Backup reminder
+  const last = state.data.settings.lastBackupAt;
+  if (last) {
+    const diff = Date.now() - new Date(last).getTime();
+    if (diff > 14 * 24 * 60 * 60 * 1000) {
+      setTimeout(() => showToast('Backup yuklab olish vaqti keldi', 'Eksport', exportAll), 3000);
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'interactive' || document.readyState === 'complete') init();
+
+</script>
+</body>
+</html>
