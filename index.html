@@ -605,6 +605,136 @@ a { color: var(--accent); text-decoration: none; }
 }
 .pomo-stats .s-val { font-size: 18px; font-weight: 700; }
 
+/* === INLINE POMODORO (Vazifalar yuqorisida) === */
+.pomo-inline {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 1px solid #FCD34D;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  transition: all 250ms ease-out;
+}
+.pomo-inline.running { background: linear-gradient(135deg, #FCD34D 0%, #FBBF24 100%); border-color: #F59E0B; }
+.pomo-inline.break { background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); border-color: #93C5FD; }
+.pomo-inline .pomo-info { flex: 1; min-width: 0; }
+.pomo-mode-mini {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: #92400E;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pomo-inline.break .pomo-mode-mini { color: #1E40AF; }
+.pomo-time-mini {
+  font-size: 26px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #78350F;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.pomo-inline.break .pomo-time-mini { color: #1E3A8A; }
+.pomo-reset-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  color: #92400E;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 150ms;
+}
+.pomo-reset-btn:active { background: rgba(255,255,255,0.5); }
+.pomo-reset-btn svg { width: 18px; height: 18px; }
+.pomo-action {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: #78350F; color: white;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 150ms, background 150ms;
+}
+.pomo-inline.break .pomo-action { background: #1E3A8A; }
+.pomo-action:active { transform: scale(0.94); }
+.pomo-action svg { width: 22px; height: 22px; }
+
+/* === INLINE SUBTASKS DROPDOWN === */
+.task-wrap { margin-bottom: 8px; }
+.task-expand {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 9px 5px 10px;
+  min-height: 28px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: all 180ms ease-out;
+}
+.task-expand:active { transform: scale(0.94); background: var(--accent-soft); }
+.task-expand.open {
+  background: var(--accent-soft);
+  border-color: #BFDBFE;
+  color: var(--accent);
+}
+.task-expand .chev {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px;
+  transition: transform 250ms ease-out;
+}
+.task-expand .chev svg { width: 14px; height: 14px; display: block; stroke-width: 3; }
+.task-expand.open .chev { transform: rotate(180deg); }
+.task-expand .sub-count { color: inherit; line-height: 1; }
+
+.subtasks-inline {
+  margin-top: 4px;
+  margin-left: 20px;
+  padding: 4px 12px 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  animation: subOpen 200ms ease-out;
+}
+@keyframes subOpen { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.sub-mini {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sub-mini:last-of-type { border-bottom: none; }
+.sub-mini-check {
+  flex: 0 0 18px; width: 18px; height: 18px;
+  border-radius: 5px;
+  border: 2px solid var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+}
+.sub-mini-check svg { width: 10px; height: 10px; color: white; opacity: 0; }
+.sub-mini.done .sub-mini-check { background: var(--success); border-color: var(--success); }
+.sub-mini.done .sub-mini-check svg { opacity: 1; }
+.sub-mini.done .sub-mini-text { text-decoration: line-through; color: var(--text-muted); }
+.sub-mini-text {
+  flex: 1; font-size: 13px;
+  background: transparent;
+  padding: 2px 0;
+  border: none;
+}
+.sub-mini-del {
+  flex: 0 0 26px; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-light);
+  border-radius: 6px;
+}
+.sub-mini-del svg { width: 14px; height: 14px; }
+.sub-mini-del:active { background: var(--surface-2); color: var(--danger); }
+.sub-add-btn {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%;
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+}
+.sub-add-btn svg { width: 14px; height: 14px; }
+
 /* === CONFETTI === */
 @keyframes confetti-fall {
   0% { transform: translateY(-20px) rotate(0); opacity: 1; }
@@ -822,7 +952,8 @@ const state = {
   currentView: 'tasks',
   currentDate: todayKey(),
   kayzenDate: todayKey(),
-  taskFilter: { time: 'today', status: 'all', search: '' },
+  taskFilter: { time: 'today' },
+  expandedTasks: new Set(),
   pomodoro: null, // {running, mode, secondsLeft, taskId, sessionCount}
 };
 
@@ -867,6 +998,7 @@ const icons = {
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
   chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
   chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  chevDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
   archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
@@ -971,11 +1103,6 @@ function renderTopbar() {
   titleEl.textContent = map[state.currentView].title;
   subEl.textContent = map[state.currentView].sub;
 
-  // Pomodoro ikona — har doim
-  const pomoBtn = el(`<button class="icon-btn" aria-label="Pomodoro">${icons.pomo}</button>`);
-  pomoBtn.onclick = openPomodoro;
-  actEl.appendChild(pomoBtn);
-
   if (state.currentView === 'checklist') {
     const setBtn = el(`<button class="icon-btn" aria-label="Sozlamalar">${icons.settings}</button>`);
     setBtn.onclick = openHabitsManager;
@@ -1008,27 +1135,10 @@ function renderTasks() {
   const v = document.getElementById('view-tasks');
   v.innerHTML = '';
 
-  // Search
-  const searchWrap = el(`
-    <div class="row" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:10px;gap:8px;">
-      <span style="color:var(--text-muted);display:flex;">${icons.search}</span>
-      <input class="input" id="task-search" placeholder="Vazifani qidirish..." style="border:none;padding:6px 0;flex:1;" value="${escapeHtml(state.taskFilter.search)}"/>
-    </div>`);
-  v.appendChild(searchWrap);
-  searchWrap.querySelector('#task-search').oninput = (e) => {
-    state.taskFilter.search = e.target.value;
-    renderTaskList();
-  };
-
-  // MIT block
-  const mit = el(`
-    <div class="mit-block">
-      <div class="mit-head">
-        <div class="mit-title">🎯 Bugungi 3 ta muhim</div>
-      </div>
-      <div id="mit-list"></div>
-    </div>`);
-  v.appendChild(mit);
+  // Inline Pomodoro (qidiruv o'rniga)
+  const pomoWrap = el(`<div id="pomo-host"></div>`);
+  v.appendChild(pomoWrap);
+  renderInlinePomo();
 
   // Time filters
   const tFilter = el(`<div class="chip-row" id="time-filter"></div>`);
@@ -1040,16 +1150,6 @@ function renderTasks() {
   }
   v.appendChild(tFilter);
 
-  // Status filters
-  const sFilter = el(`<div class="chip-row" id="status-filter"></div>`);
-  const sOpts = [['all', 'Hammasi'], ['important', '🚩 Muhim'], ['todo', '✓ Bajariladi'], ['delegated', '👥 Topshirildi']];
-  for (const [k, l] of sOpts) {
-    const c = el(`<button class="chip ${state.taskFilter.status === k ? 'active' : ''}">${l}</button>`);
-    c.onclick = () => { state.taskFilter.status = k; renderTasks(); };
-    sFilter.appendChild(c);
-  }
-  v.appendChild(sFilter);
-
   // List
   const list = el(`<div id="task-list"></div>`);
   v.appendChild(list);
@@ -1058,20 +1158,8 @@ function renderTasks() {
 }
 
 function renderTaskList() {
-  // MIT
-  const mitList = document.getElementById('mit-list');
-  if (!mitList) return;
-  const today = todayKey();
-  const mitTasks = state.data.tasks.filter(t => t.isMIT && t.mitDate === today && !t.completed && !t.archived).slice(0, 3);
-  mitList.innerHTML = '';
-  if (mitTasks.length === 0) {
-    mitList.appendChild(el(`<div class="mit-empty">Bugungi eng muhim 3 ta vazifani belgilang. Vazifa detalida "MIT ga qo'shish".</div>`));
-  } else {
-    mitTasks.forEach(t => mitList.appendChild(taskCard(t)));
-  }
-
-  // Main list
   const list = document.getElementById('task-list');
+  if (!list) return;
   list.innerHTML = '';
   const filtered = filterTasks();
   if (filtered.length === 0) {
@@ -1086,7 +1174,6 @@ function filterTasks() {
   const today = todayKey();
   const tomorrow = dateKey(addDays(new Date(), 1));
   const weekEnd = dateKey(addDays(new Date(), 7));
-  const term = f.search.trim().toLowerCase();
 
   return state.data.tasks.filter(t => {
     if (t.archived) return false;
@@ -1103,13 +1190,8 @@ function filterTasks() {
       const dk = t.deadline.slice(0, 10);
       if (dk > weekEnd) return false;
     }
-    if (f.status !== 'all' && t.status !== f.status) return false;
-    if (term && !(t.title || '').toLowerCase().includes(term) && !(t.notes || '').toLowerCase().includes(term)) return false;
     return true;
   }).sort((a, b) => {
-    // Important first, then by deadline, then by createdAt
-    const pr = { important: 0, todo: 1, delegated: 2 };
-    if (pr[a.status] !== pr[b.status]) return pr[a.status] - pr[b.status];
     if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
     if (a.deadline) return -1;
     if (b.deadline) return 1;
@@ -1120,34 +1202,102 @@ function filterTasks() {
 function taskCard(t) {
   const subDone = (t.subtasks || []).filter(s => s.done).length;
   const subTotal = (t.subtasks || []).length;
-  const badgeMap = {
-    important: '<span class="badge badge-important">🚩 Eng muhim</span>',
-    todo: '<span class="badge badge-todo">✓ Bajariladi</span>',
-    delegated: '<span class="badge badge-delegated">👥 Topshirildi</span>',
-  };
-  let metaParts = [badgeMap[t.status] || ''];
+  const expanded = state.expandedTasks.has(t.id);
+
+  let metaParts = [];
   if (t.deadline) {
     const dl = new Date(t.deadline);
     const tm = String(dl.getHours()).padStart(2, '0') + ':' + String(dl.getMinutes()).padStart(2, '0');
     metaParts.push(`<span class="badge badge-meta">📅 ${dateKey(dl) === todayKey() ? '' : formatDateShort(dl) + ' '}${tm}</span>`);
   }
-  if (subTotal > 0) metaParts.push(`<span class="badge badge-meta">${subDone}/${subTotal} subtask</span>`);
   if (t.category) metaParts.push(`<span class="cat-tag">#${escapeHtml(t.category)}</span>`);
 
+  const wrap = el(`<div class="task-wrap" data-id="${t.id}"></div>`);
+
   const card = el(`
-    <div class="task-card ${t.completed ? 'completed' : ''}" data-id="${t.id}">
+    <div class="task-card ${t.completed ? 'completed' : ''}">
       <button class="task-check" aria-label="Bajarildi">${icons.check}</button>
       <div class="task-body">
         <div class="task-title">${escapeHtml(t.title)}</div>
-        <div class="task-meta">${metaParts.join('')}</div>
+        ${metaParts.length ? `<div class="task-meta">${metaParts.join('')}</div>` : ''}
       </div>
+      <button class="task-expand ${expanded ? 'open' : ''}" aria-label="Subtasklar">
+        ${subTotal > 0 ? `<span class="sub-count">${subDone}/${subTotal}</span>` : ''}
+        <span class="chev">${icons.chevDown}</span>
+      </button>
     </div>`);
+
   card.querySelector('.task-check').onclick = (e) => {
     e.stopPropagation();
     toggleTaskComplete(t.id);
   };
-  card.onclick = () => openTaskDetail(t.id);
-  return card;
+  card.querySelector('.task-expand').onclick = (e) => {
+    e.stopPropagation();
+    toggleExpand(t.id);
+  };
+  // Karta o'zi (title qismi) → detal modal
+  card.querySelector('.task-body').onclick = () => openTaskDetail(t.id);
+
+  wrap.appendChild(card);
+
+  if (expanded) {
+    wrap.appendChild(buildSubtasksInline(t));
+  }
+  return wrap;
+}
+
+function toggleExpand(id) {
+  if (state.expandedTasks.has(id)) state.expandedTasks.delete(id);
+  else state.expandedTasks.add(id);
+  renderTaskList();
+}
+
+function buildSubtasksInline(t) {
+  if (!t.subtasks) t.subtasks = [];
+  const panel = el(`<div class="subtasks-inline"></div>`);
+
+  t.subtasks.forEach((s, idx) => {
+    const row = el(`
+      <div class="sub-mini ${s.done ? 'done' : ''}">
+        <button class="sub-mini-check" aria-label="Bajarildi">${icons.check}</button>
+        <input class="sub-mini-text" value="${escapeHtml(s.title)}" placeholder="Subtask nomi..."/>
+        <button class="sub-mini-del" aria-label="O'chirish">${icons.x}</button>
+      </div>`);
+    row.querySelector('.sub-mini-check').onclick = (e) => {
+      e.stopPropagation();
+      s.done = !s.done;
+      vibrate(8);
+      saveState();
+      renderTaskList();
+    };
+    row.querySelector('.sub-mini-text').oninput = (e) => {
+      s.title = e.target.value;
+      saveState();
+    };
+    row.querySelector('.sub-mini-del').onclick = (e) => {
+      e.stopPropagation();
+      t.subtasks.splice(idx, 1);
+      saveState();
+      renderTaskList();
+    };
+    panel.appendChild(row);
+  });
+
+  const addBtn = el(`<button class="sub-add-btn">${icons.plus} Subtask qo'shish</button>`);
+  addBtn.onclick = (e) => {
+    e.stopPropagation();
+    t.subtasks.push({ id: uid(), title: '', done: false });
+    saveState();
+    renderTaskList();
+    // focus the newly added input
+    setTimeout(() => {
+      const wraps = document.querySelectorAll(`.task-wrap[data-id="${t.id}"] .sub-mini-text`);
+      if (wraps.length) wraps[wraps.length - 1].focus();
+    }, 30);
+  };
+  panel.appendChild(addBtn);
+
+  return panel;
 }
 
 function toggleTaskComplete(id) {
@@ -1167,14 +1317,11 @@ function createTask(opts = {}) {
   const t = {
     id: uid(),
     title: opts.title || '',
-    status: opts.status || 'todo',
     completed: false,
     category: opts.category || '',
     deadline: opts.deadline || null,
     notes: '',
     subtasks: [],
-    isMIT: false,
-    mitDate: null,
     createdAt: new Date().toISOString(),
     completedAt: null,
     pomodoroCount: 0,
@@ -1198,14 +1345,6 @@ function openQuickAdd() {
           <input class="input" id="t-title" placeholder="Vazifa nomi..." autofocus/>
         </div>
         <div class="form-section">
-          <label class="form-label">Status</label>
-          <div class="status-picker" id="t-status">
-            <button class="status-opt important" data-v="important"><span class="opt-icon">🚩</span>Muhim</button>
-            <button class="status-opt todo active" data-v="todo"><span class="opt-icon">✓</span>Bajariladi</button>
-            <button class="status-opt delegated" data-v="delegated"><span class="opt-icon">👥</span>Topshirildi</button>
-          </div>
-        </div>
-        <div class="form-section">
           <label class="form-label">Tezkor deadline</label>
           <div class="chip-row" id="t-deadline">
             <button class="chip" data-v="">Yo'q</button>
@@ -1214,20 +1353,18 @@ function openQuickAdd() {
             <button class="chip" data-v="week">1 hafta</button>
           </div>
         </div>
+        <div class="form-section">
+          <label class="form-label">Subtasklar (ixtiyoriy)</label>
+          <div id="qa-subs" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px 12px;"></div>
+          <button class="sub-add-btn" id="qa-add-sub" style="padding:10px 4px;margin-top:2px;">${icons.plus} Subtask qo'shish</button>
+        </div>
       </div>
     </div>`);
   openSheet(content);
 
-  let status = 'todo';
   let deadline = 'today';
+  const subs = []; // {title}
 
-  content.querySelectorAll('#t-status .status-opt').forEach(b => {
-    b.onclick = () => {
-      content.querySelectorAll('#t-status .status-opt').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      status = b.dataset.v;
-    };
-  });
   content.querySelectorAll('#t-deadline .chip').forEach(b => {
     b.onclick = () => {
       content.querySelectorAll('#t-deadline .chip').forEach(x => x.classList.remove('active'));
@@ -1239,6 +1376,48 @@ function openQuickAdd() {
   const titleInput = content.querySelector('#t-title');
   setTimeout(() => titleInput.focus(), 100);
 
+  function renderSubs() {
+    const wrap = content.querySelector('#qa-subs');
+    wrap.innerHTML = '';
+    if (subs.length === 0) {
+      wrap.appendChild(el(`<div style="padding:10px 0;color:var(--text-light);font-size:13px;">Hozircha subtask yo'q</div>`));
+      return;
+    }
+    subs.forEach((s, idx) => {
+      const row = el(`
+        <div class="sub-mini">
+          <span style="flex:0 0 18px;width:18px;height:18px;border-radius:5px;border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;"></span>
+          <input class="sub-mini-text" value="${escapeHtml(s.title)}" placeholder="Subtask nomi..."/>
+          <button class="sub-mini-del" aria-label="O'chirish">${icons.x}</button>
+        </div>`);
+      const inp = row.querySelector('.sub-mini-text');
+      inp.oninput = (e) => { s.title = e.target.value; };
+      inp.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addSub();
+        }
+      };
+      row.querySelector('.sub-mini-del').onclick = () => {
+        subs.splice(idx, 1);
+        renderSubs();
+      };
+      wrap.appendChild(row);
+    });
+  }
+
+  function addSub() {
+    subs.push({ title: '' });
+    renderSubs();
+    setTimeout(() => {
+      const inputs = content.querySelectorAll('#qa-subs .sub-mini-text');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }, 30);
+  }
+
+  content.querySelector('#qa-add-sub').onclick = addSub;
+  renderSubs();
+
   function save() {
     const title = titleInput.value.trim();
     if (!title) { titleInput.focus(); return; }
@@ -1246,7 +1425,13 @@ function openQuickAdd() {
     if (deadline === 'today') { const d = new Date(); d.setHours(23, 59, 0, 0); dl = d.toISOString().slice(0, 16); }
     else if (deadline === 'tomorrow') { const d = addDays(new Date(), 1); d.setHours(23, 59, 0, 0); dl = d.toISOString().slice(0, 16); }
     else if (deadline === 'week') { const d = addDays(new Date(), 7); d.setHours(23, 59, 0, 0); dl = d.toISOString().slice(0, 16); }
-    createTask({ title, status, deadline: dl });
+    const t = createTask({ title, deadline: dl });
+    // Subtasklarni qo'shish (faqat matni bor bo'lganlari)
+    subs.forEach(s => {
+      const tt = (s.title || '').trim();
+      if (tt) t.subtasks.push({ id: uid(), title: tt, done: false });
+    });
+    saveState();
     closeSheet();
     renderTaskList();
     showToast("Vazifa qo'shildi");
@@ -1254,7 +1439,10 @@ function openQuickAdd() {
 
   content.querySelector('#cnc').onclick = closeSheet;
   content.querySelector('#save').onclick = save;
-  titleInput.onkeydown = (e) => { if (e.key === 'Enter') save(); };
+  titleInput.onkeydown = (e) => { if (e.key === 'Enter') {
+    if (subs.length === 0) save();
+    else addSub();
+  } };
 }
 
 function openTaskDetail(id) {
@@ -1273,15 +1461,6 @@ function openTaskDetail(id) {
       <div class="modal-body">
         <div class="form-section">
           <input class="input" id="t-title" value="${escapeHtml(t.title)}" placeholder="Vazifa nomi..." style="font-size:18px;font-weight:600;"/>
-        </div>
-
-        <div class="form-section">
-          <label class="form-label">Status</label>
-          <div class="status-picker" id="t-status">
-            <button class="status-opt important ${t.status==='important'?'active':''}" data-v="important"><span class="opt-icon">🚩</span>Muhim</button>
-            <button class="status-opt todo ${t.status==='todo'?'active':''}" data-v="todo"><span class="opt-icon">✓</span>Bajariladi</button>
-            <button class="status-opt delegated ${t.status==='delegated'?'active':''}" data-v="delegated"><span class="opt-icon">👥</span>Topshirildi</button>
-          </div>
         </div>
 
         <div class="form-section">
@@ -1307,10 +1486,6 @@ function openTaskDetail(id) {
         <div class="form-section">
           <label class="form-label">Izoh</label>
           <textarea class="textarea" id="t-notes" placeholder="Vazifa haqida qo'shimcha...">${escapeHtml(t.notes || '')}</textarea>
-        </div>
-
-        <div class="form-section">
-          <button class="btn btn-secondary btn-block" id="mit-btn">${t.isMIT && t.mitDate === todayKey() ? '⭐ MIT dan olib tashlash' : '⭐ Bugungi MIT ga qo\'shish'}</button>
         </div>
 
         <div class="form-section">
@@ -1342,15 +1517,6 @@ function openTaskDetail(id) {
 
   const titleEl = content.querySelector('#t-title');
   titleEl.oninput = () => { t.title = titleEl.value; commit(); };
-
-  content.querySelectorAll('#t-status .status-opt').forEach(b => {
-    b.onclick = () => {
-      content.querySelectorAll('#t-status .status-opt').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      t.status = b.dataset.v;
-      commit();
-    };
-  });
 
   const dlEl = content.querySelector('#t-deadline');
   dlEl.onchange = () => {
@@ -1413,29 +1579,9 @@ function openTaskDetail(id) {
   const notesEl = content.querySelector('#t-notes');
   notesEl.oninput = () => { t.notes = notesEl.value; commit(); };
 
-  content.querySelector('#mit-btn').onclick = () => {
-    if (t.isMIT && t.mitDate === todayKey()) {
-      t.isMIT = false;
-      t.mitDate = null;
-      showToast("MIT dan olib tashlandi");
-    } else {
-      const mitCount = state.data.tasks.filter(x => x.isMIT && x.mitDate === todayKey() && !x.completed && x.id !== id).length;
-      if (mitCount >= 3) {
-        showToast("Bir kunda eng ko'pi 3 ta MIT bo'la oladi");
-        return;
-      }
-      t.isMIT = true;
-      t.mitDate = todayKey();
-      showToast("Bugungi MIT ga qo'shildi ⭐");
-    }
-    commit();
-    closeSheet();
-    openTaskDetail(id);
-  };
-
   content.querySelector('#pomo-btn').onclick = () => {
     closeSheet();
-    openPomodoro(t.id);
+    startPomoForTask(t.id);
   };
 }
 
@@ -2045,92 +2191,54 @@ function renderHabitStats() {
 }
 
 /* ============================================================
-   === POMODORO ===
+   === POMODORO (INLINE, Vazifalar yuqorisida) ===
    ============================================================ */
-function openPomodoro(taskId = null) {
+function ensurePomoState() {
   if (!state.pomodoro) {
     state.pomodoro = {
       running: false,
       mode: 'work', // 'work' | 'short' | 'long'
       secondsLeft: state.data.pomodoro.workMin * 60,
-      taskId,
+      taskId: null,
       sessionCount: 0,
     };
   }
-  if (taskId) state.pomodoro.taskId = taskId;
+}
 
-  const task = state.pomodoro.taskId ? state.data.tasks.find(t => t.id === state.pomodoro.taskId) : null;
+function fmtPomoTime(s) {
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+}
 
-  const content = el(`
-    <div class="modal-full">
-      <div class="modal-head" style="background:transparent;border:none;">
-        <button class="icon-btn" id="close">${icons.x}</button>
-        <div class="modal-title">Pomodoro</div>
-        <span></span>
-      </div>
-      <div class="pomo-screen">
-        <div class="pomo-mode" id="p-mode"></div>
-        <div class="pomo-time" id="p-time">25:00</div>
-        <div class="pomo-task" id="p-task">${task ? escapeHtml(task.title) : '&nbsp;'}</div>
-        <div class="pomo-controls">
-          <button class="pomo-btn" id="p-reset" aria-label="Qaytadan">${icons.reset}</button>
-          <button class="pomo-btn primary" id="p-toggle" aria-label="Boshlash">${icons.play}</button>
-          <button class="pomo-btn" id="p-skip" aria-label="O'tkazib yuborish">${icons.chevR}</button>
-        </div>
-        <div class="pomo-stats">
-          <div><div>Bugun</div><div class="s-val" id="p-today">0 daq</div></div>
-          <div><div>Sessiyalar</div><div class="s-val" id="p-sess">${state.pomodoro.sessionCount}</div></div>
-        </div>
-      </div>
-    </div>`);
-  // Replace standard modal frame
-  const host = document.getElementById('modal-host');
+function pomoModeLabel() {
+  if (state.pomodoro.mode === 'work') return 'FOKUS';
+  if (state.pomodoro.mode === 'short') return 'QISQA DAM';
+  return 'UZOQ DAM';
+}
+
+function renderInlinePomo() {
+  ensurePomoState();
+  const host = document.getElementById('pomo-host');
+  if (!host) return;
+  const p = state.pomodoro;
+  const isBreak = p.mode !== 'work';
+  const task = p.taskId ? state.data.tasks.find(t => t.id === p.taskId) : null;
+  const modeText = pomoModeLabel() + (task ? ' · ' + (task.title.length > 22 ? task.title.slice(0, 22) + '…' : task.title) : '');
+
   host.innerHTML = '';
-  const bd = el('<div class="modal-backdrop" style="background:#FEF3C7;"></div>');
-  const m = el('<div class="modal modal-full"></div>');
-  m.appendChild(content);
-  bd.appendChild(m);
-  host.appendChild(bd);
-  document.body.style.overflow = 'hidden';
-
-  function fmt(s) {
-    const m = Math.floor(s / 60), ss = s % 60;
-    return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
-  }
-  function updateUI() {
-    const modeText = state.pomodoro.mode === 'work' ? 'FOKUS' : (state.pomodoro.mode === 'short' ? 'QISQA DAM' : 'UZOQ DAM');
-    content.querySelector('#p-mode').textContent = modeText;
-    content.querySelector('#p-time').textContent = fmt(state.pomodoro.secondsLeft);
-    content.querySelector('#p-toggle').innerHTML = state.pomodoro.running ? icons.pause : icons.play;
-    const today = todayKey();
-    const pomoToday = state.data.pomodoro.sessions.filter(s => s.date === today).reduce((a, b) => a + b.minutes, 0);
-    content.querySelector('#p-today').textContent = pomoToday + ' daq';
-    content.querySelector('#p-sess').textContent = state.pomodoro.sessionCount;
-  }
-  updateUI();
-
-  content.querySelector('#close').onclick = () => {
-    bd.remove();
-    document.body.style.overflow = '';
-  };
-  content.querySelector('#p-toggle').onclick = () => {
-    if (state.pomodoro.running) pausePomodoro();
-    else startPomodoro(updateUI);
-    updateUI();
-  };
-  content.querySelector('#p-reset').onclick = () => {
-    pausePomodoro();
-    state.pomodoro.secondsLeft = currentModeSeconds();
-    updateUI();
-  };
-  content.querySelector('#p-skip').onclick = () => {
-    pausePomodoro();
-    advancePomodoroMode();
-    updateUI();
-  };
-
-  // Live update
-  state.pomodoro._uiUpdate = updateUI;
+  const card = el(`
+    <div class="pomo-inline ${p.running ? 'running' : ''} ${isBreak ? 'break' : ''}">
+      <div class="pomo-info">
+        <div class="pomo-mode-mini">🍅 ${escapeHtml(modeText)}</div>
+        <div class="pomo-time-mini">${fmtPomoTime(p.secondsLeft)}</div>
+      </div>
+      <button class="pomo-reset-btn" data-act="reset" aria-label="Qaytadan">${icons.reset}</button>
+      <button class="pomo-action" data-act="toggle" aria-label="${p.running ? 'Pauza' : 'Boshlash'}">${p.running ? icons.pause : icons.play}</button>
+    </div>`);
+  card.querySelector('[data-act="toggle"]').onclick = togglePomo;
+  card.querySelector('[data-act="reset"]').onclick = resetPomo;
+  host.appendChild(card);
 }
 
 function currentModeSeconds() {
@@ -2140,25 +2248,53 @@ function currentModeSeconds() {
   if (m === 'short') return p.shortBreakMin * 60;
   return p.longBreakMin * 60;
 }
+
 let _pomoTimer = null;
-function startPomodoro(onTick) {
-  state.pomodoro.running = true;
-  clearInterval(_pomoTimer);
-  _pomoTimer = setInterval(() => {
-    state.pomodoro.secondsLeft--;
-    if (state.pomodoro.secondsLeft <= 0) {
-      // Tamomlandi
-      clearInterval(_pomoTimer);
-      state.pomodoro.running = false;
-      onPomodoroDone();
+function togglePomo() {
+  ensurePomoState();
+  if (state.pomodoro.running) {
+    state.pomodoro.running = false;
+    clearInterval(_pomoTimer);
+  } else {
+    state.pomodoro.running = true;
+    if (state.pomodoro.secondsLeft <= 0) state.pomodoro.secondsLeft = currentModeSeconds();
+    startPomoTick();
+    // ruxsat so'rash
+    if ('Notification' in window && Notification.permission === 'default') {
+      try { Notification.requestPermission(); } catch(e){}
     }
-    if (state.pomodoro._uiUpdate) state.pomodoro._uiUpdate();
-  }, 1000);
+  }
+  renderInlinePomo();
 }
-function pausePomodoro() {
+
+function resetPomo() {
+  ensurePomoState();
   state.pomodoro.running = false;
   clearInterval(_pomoTimer);
+  state.pomodoro.secondsLeft = currentModeSeconds();
+  renderInlinePomo();
 }
+
+function startPomoTick() {
+  clearInterval(_pomoTimer);
+  _pomoTimer = setInterval(() => {
+    if (!state.pomodoro || !state.pomodoro.running) {
+      clearInterval(_pomoTimer);
+      return;
+    }
+    state.pomodoro.secondsLeft--;
+    if (state.pomodoro.secondsLeft <= 0) {
+      clearInterval(_pomoTimer);
+      onPomodoroDone();
+    }
+    // Faqat Vazifalar bo'limidagi inline taymerni yangilash
+    if (state.currentView === 'tasks') {
+      const tEl = document.querySelector('.pomo-time-mini');
+      if (tEl) tEl.textContent = fmtPomoTime(state.pomodoro.secondsLeft);
+    }
+  }, 1000);
+}
+
 function advancePomodoroMode() {
   if (state.pomodoro.mode === 'work') {
     state.pomodoro.sessionCount++;
@@ -2168,12 +2304,12 @@ function advancePomodoroMode() {
   }
   state.pomodoro.secondsLeft = currentModeSeconds();
 }
+
 function onPomodoroDone() {
-  // Beep
   try { playBeep(); } catch (e) {}
   vibrate([200, 100, 200, 100, 400]);
-  if (Notification && Notification.permission === 'granted') {
-    new Notification('Pomodoro tugadi', { body: state.pomodoro.mode === 'work' ? 'Dam olishga vaqt' : 'Ishga qaytishga vaqt' });
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('Pomodoro tugadi', { body: state.pomodoro.mode === 'work' ? 'Dam olishga vaqt' : 'Ishga qaytishga vaqt' }); } catch(e){}
   }
   if (state.pomodoro.mode === 'work') {
     state.data.pomodoro.sessions.push({
@@ -2189,7 +2325,22 @@ function onPomodoroDone() {
     saveState();
   }
   advancePomodoroMode();
-  if (state.pomodoro._uiUpdate) state.pomodoro._uiUpdate();
+  renderInlinePomo();
+}
+
+// Vazifa detalidan chaqiriladi
+function startPomoForTask(taskId) {
+  ensurePomoState();
+  // Agar ish rejimida emas yoki ishlamayotgan bo'lsa — to'liq qaytadan boshlash
+  if (state.pomodoro.mode !== 'work' || !state.pomodoro.running) {
+    state.pomodoro.mode = 'work';
+    state.pomodoro.secondsLeft = state.data.pomodoro.workMin * 60;
+  }
+  state.pomodoro.taskId = taskId;
+  state.pomodoro.running = true;
+  switchView('tasks');
+  startPomoTick();
+  renderInlinePomo();
 }
 
 function playBeep() {
