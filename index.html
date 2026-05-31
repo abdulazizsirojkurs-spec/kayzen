@@ -2054,35 +2054,50 @@ function renderStats() {
   const syncEnabled = state.sync && state.sync.enabled;
   const syncId = (state.sync && state.sync.syncId) || '';
   const isTgUser = syncEnabled && syncId.startsWith('tg-');
+  const tgUser = state.sync && state.sync.tgUser;
+  const inTelegram = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user);
+
   const syncCard = el(`
     <div class="stats-section">
       <h3>☁️ Cloud Sync</h3>
       <div class="card" style="background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border-color:#BFDBFE;">
-        <div class="row between" style="margin-bottom:10px;">
-          <div style="flex:1;">
-            <div style="font-weight:600;color:#1E40AF;">${syncEnabled ? '✓ Yoqilgan' : 'Yoqilmagan'}</div>
-            <div class="small muted" style="margin-top:2px;">${syncEnabled ? (isTgUser ? 'Telegram orqali ulangan' : 'Telefon ↔ noutbuk sinxron') : "Telefon va noutbuk ma'lumotlarini bog'lash"}</div>
-          </div>
-          <button class="btn ${syncEnabled ? 'btn-secondary' : 'btn-primary'}" id="cs-toggle" style="min-height:38px;padding:8px 16px;">${syncEnabled ? "O'chirish" : 'Yoqish'}</button>
-        </div>
         ${syncEnabled ? `
+          <div class="row between" style="margin-bottom:10px;">
+            <div style="flex:1;">
+              <div style="font-weight:600;color:#1E40AF;">${tgUser ? '🤖 ' + escapeHtml(tgUser.name) : '✓ Yoqilgan'}</div>
+              <div class="small muted" style="margin-top:2px;">${isTgUser ? (inTelegram ? 'Telegram Mini App orqali' : 'Telegram orqali ulangan') : 'Telefon ↔ noutbuk sinxron'}</div>
+            </div>
+            <button class="btn btn-secondary" id="cs-toggle" style="min-height:38px;padding:8px 16px;">Chiqish</button>
+          </div>
           <div style="background:white;border-radius:8px;padding:10px;margin-top:8px;">
-            <div class="small muted" style="margin-bottom:4px;">Sync kalit (siringiz):</div>
+            <div class="small muted" style="margin-bottom:4px;">Sync kalit:</div>
             <div style="font-family:monospace;font-size:11px;word-break:break-all;color:var(--text);">${escapeHtml(syncId)}</div>
             <div class="row" style="gap:6px;margin-top:10px;">
               <button class="btn btn-secondary" id="cs-copy" style="flex:1;min-height:38px;">📋 Nusxa</button>
               <button class="btn btn-secondary" id="cs-sync-now" style="flex:1;min-height:38px;">↻ Yangilash</button>
             </div>
           </div>
-          <button class="btn btn-primary btn-block" id="cs-paste" style="margin-top:10px;background:#1E40AF;">📥 Boshqa qurilmadan ulanish</button>
           <div class="small muted" style="margin-top:8px;text-align:center;" id="cs-status-stats">${state.sync.lastSyncedAt ? 'Sinxron: ' + relTime(state.sync.lastSyncedAt) : 'Tayyor'}</div>
         ` : `
-          <button class="btn btn-secondary btn-block" id="cs-paste-first" style="margin-top:8px;">📥 Mavjud kalit bilan ulanish</button>
-          <div class="small muted" style="margin-top:8px;text-align:center;">Boshqa qurilmadagi kalit bilan ulanish uchun</div>
+          <div style="text-align:center;padding:8px 0 4px;">
+            <div style="font-size:22px;margin-bottom:6px;">🤖</div>
+            <div style="font-weight:600;color:#1E40AF;font-size:15px;margin-bottom:4px;">Telegram bilan ulaning</div>
+            <div class="small muted" style="margin-bottom:14px;padding:0 12px;">Bir bosishda kirasiz. Telefon, noutbuk va planshetda bir xil ma'lumot.</div>
+            <div id="tg-login-host" style="display:flex;justify-content:center;min-height:48px;align-items:center;"></div>
+            <div class="small muted" style="margin-top:10px;font-size:11px;">Tugma ko'rinmasa: BotFather'da <code>/setdomain</code> → <code>kayzen-rho.vercel.app</code></div>
+          </div>
+          <div style="border-top:1px solid #BFDBFE;margin:14px 0 10px;padding-top:12px;">
+            <button class="btn btn-secondary btn-block" id="cs-paste-first">🔑 Yoki — sync kalit bilan ulanish</button>
+          </div>
         `}
       </div>
     </div>`);
   v.appendChild(syncCard);
+
+  // Telegram login widget (faqat sync yoqilmagan paytda)
+  if (!syncEnabled) {
+    setTimeout(() => renderTelegramLoginButton('tg-login-host'), 50);
+  }
 
   // Sync handlerlar
   const csToggle = syncCard.querySelector('#cs-toggle');
@@ -2914,6 +2929,9 @@ async function enableCloudSync() {
 
 function disableCloudSync() {
   state.sync.enabled = false;
+  state.sync.tgUser = null;
+  state.sync.syncId = null;
+  state.sync.lastSyncedAt = null;
   saveSyncSettings();
   unsubscribeRealtime();
   supabase = null;
@@ -2949,6 +2967,43 @@ async function connectWithSyncKey(key) {
     setSyncStatus('error');
     showToast('Xato: ' + (e.message || 'ulanish muvaffaqiyatsiz'));
   }
+}
+
+/* === TELEGRAM LOGIN WIDGET (PWA dan kirish) === */
+const TG_BOT_USERNAME = 'kayzen_samaradorlik_bot';
+
+// Global callback Telegram widget chaqirilganda
+window.onKayzenTelegramAuth = async function(user) {
+  if (!user || !user.id) {
+    showToast("Telegram login xatoligi");
+    return;
+  }
+  state.sync.tgUser = {
+    id: user.id,
+    name: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
+    username: user.username || null,
+    photo: user.photo_url || null,
+  };
+  saveSyncSettings();
+  const syncId = 'tg-' + user.id;
+  showToast('🤖 ' + (user.first_name || 'Telegram') + ' sifatida ulanmoqda...');
+  await connectWithSyncKey(syncId);
+  if (state.currentView === 'stats') renderStats();
+};
+
+function renderTelegramLoginButton(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://telegram.org/js/telegram-widget.js?22';
+  script.setAttribute('data-telegram-login', TG_BOT_USERNAME);
+  script.setAttribute('data-size', 'large');
+  script.setAttribute('data-radius', '10');
+  script.setAttribute('data-onauth', 'onKayzenTelegramAuth(user)');
+  script.setAttribute('data-request-access', 'write');
+  container.appendChild(script);
 }
 
 /* ============================================================
@@ -3037,11 +3092,18 @@ function init() {
       const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
       if (user && user.id) {
         const tgSyncId = 'tg-' + user.id;
+        // Telegram user ma'lumotlarini saqlash
+        state.sync.tgUser = {
+          id: user.id,
+          name: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
+          username: user.username || null,
+          photo: user.photo_url || null,
+        };
         if (!state.sync.enabled || !state.sync.syncId) {
           state.sync.enabled = true;
           state.sync.syncId = tgSyncId;
-          saveSyncSettings();
         }
+        saveSyncSettings();
       }
     } catch (e) { console.warn('Telegram init xato', e); }
   }
