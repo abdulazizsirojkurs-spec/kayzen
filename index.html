@@ -10,6 +10,7 @@
 <title>Kayzen — Samaradorlik</title>
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 /* === DESIGN TOKENS === */
@@ -939,12 +940,17 @@ function loadState() {
   }
 }
 
-function saveState() {
+function saveStateLocal() {
+  // localStorage ga saqlash, cloud push siz
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
   } catch (e) {
     showToast("Saqlashda xatolik. Joy yetmagan bo'lishi mumkin.");
   }
+}
+function saveState() {
+  saveStateLocal();
+  if (state.sync && state.sync.enabled) scheduleCloudPush();
 }
 
 const state = {
@@ -955,6 +961,8 @@ const state = {
   taskFilter: { time: 'today' },
   expandedTasks: new Set(),
   pomodoro: null, // {running, mode, secondsLeft, taskId, sessionCount}
+  sync: { enabled: false, syncId: null, lastSyncedAt: null }, // pastda load qilinadi
+  syncStatus: 'idle',
 };
 
 /* === DATE HELPERS === */
@@ -2360,6 +2368,9 @@ function playBeep() {
    ============================================================ */
 function openSettings() {
   const s = state.data.settings;
+  const syncEnabled = state.sync.enabled;
+  const syncId = state.sync.syncId || '';
+  const isTgUser = syncEnabled && syncId.startsWith('tg-');
   const content = el(`
     <div>
       <div class="modal-head">
@@ -2368,6 +2379,34 @@ function openSettings() {
         <span></span>
       </div>
       <div class="modal-body">
+        <div class="form-section">
+          <label class="form-label">☁️ Cloud Sync</label>
+          <div class="settings-row">
+            <div style="flex:1;min-width:0;">
+              <div class="label">${syncEnabled ? 'Yoqilgan' : 'O\'chirilgan'}</div>
+              <div class="desc">${syncEnabled ? (isTgUser ? 'Telegram orqali ulangan' : 'Telefon va noutbuk avtomatik sinxron') : 'Ma\'lumotlar faqat shu qurilmada'}</div>
+            </div>
+            <button class="btn ${syncEnabled ? 'btn-secondary' : 'btn-primary'}" id="sync-toggle" style="min-height:36px;padding:6px 14px;">${syncEnabled ? 'O\'chirish' : 'Yoqish'}</button>
+          </div>
+          ${syncEnabled ? `
+            <div class="settings-row">
+              <div style="flex:1;min-width:0;">
+                <div class="label">Sync kalit (sirli — saqlang)</div>
+                <div class="desc" style="font-family:monospace;font-size:10px;word-break:break-all;color:var(--text);background:var(--surface-2);padding:6px 8px;border-radius:6px;margin-top:4px;">${escapeHtml(syncId)}</div>
+              </div>
+              <button class="btn btn-secondary" id="sync-copy" style="min-height:36px;padding:6px 12px;margin-left:8px;">Nusxa</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="label">Holat</div>
+                <div class="desc" id="sync-status-text">${state.sync.lastSyncedAt ? 'Sinxron: ' + relTime(state.sync.lastSyncedAt) : 'Tayyor'}</div>
+              </div>
+              <button class="btn btn-ghost" id="sync-force" style="min-height:36px;padding:6px 12px;" aria-label="Hozir sinxronlash">↻</button>
+            </div>
+            <button class="btn btn-secondary btn-block" id="sync-paste" style="margin-top:8px;">📥 Boshqa qurilmadan ulanish (kalit kiritish)</button>
+          ` : ''}
+        </div>
+
         <div class="form-section">
           <label class="form-label">Pomodoro</label>
           <div class="settings-row"><div><div class="label">Ish davomiyligi</div></div>
@@ -2419,6 +2458,63 @@ function openSettings() {
   openSheet(content, { full: true });
 
   content.querySelector('#close').onclick = closeSheet;
+
+  // Sync handlerlar
+  const syncToggleBtn = content.querySelector('#sync-toggle');
+  if (syncToggleBtn) {
+    syncToggleBtn.onclick = async () => {
+      if (state.sync.enabled) {
+        confirmDialog("Cloud syncni o'chirasizmi? Ma'lumotlar shu qurilmada qoladi, lekin avtomatik sinxron to'xtaydi.", () => {
+          disableCloudSync();
+          closeSheet();
+          openSettings();
+        });
+      } else {
+        syncToggleBtn.textContent = 'Yoqilmoqda...';
+        await enableCloudSync();
+        closeSheet();
+        openSettings();
+        showToast("☁️ Cloud sync yoqildi");
+      }
+    };
+  }
+  const syncCopyBtn = content.querySelector('#sync-copy');
+  if (syncCopyBtn) {
+    syncCopyBtn.onclick = () => {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(state.sync.syncId).then(() => showToast('Kalit nusxalandi ✓'));
+      } else {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = state.sync.syncId;
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+        showToast('Kalit nusxalandi ✓');
+      }
+    };
+  }
+  const syncForceBtn = content.querySelector('#sync-force');
+  if (syncForceBtn) {
+    syncForceBtn.onclick = async () => {
+      syncForceBtn.style.transform = 'rotate(180deg)';
+      await fetchFromCloud();
+      setTimeout(() => syncForceBtn.style.transform = '', 400);
+    };
+  }
+  const syncPasteBtn = content.querySelector('#sync-paste');
+  if (syncPasteBtn) {
+    syncPasteBtn.onclick = () => {
+      const key = prompt("Boshqa qurilmadagi sync kalitni kiriting:");
+      if (key && key.trim()) {
+        confirmDialog("Bu qurilmadagi ma'lumotlar Cloud bilan almashtiriladi. Davom etamizmi?", async () => {
+          await connectWithSyncKey(key.trim());
+          closeSheet();
+          openSettings();
+        });
+      }
+    };
+  }
+
   content.querySelector('#p-w').onchange = (e) => { state.data.pomodoro.workMin = Math.max(5, +e.target.value || 25); saveState(); };
   content.querySelector('#p-s').onchange = (e) => { state.data.pomodoro.shortBreakMin = Math.max(1, +e.target.value || 5); saveState(); };
   content.querySelector('#p-l').onchange = (e) => { state.data.pomodoro.longBreakMin = Math.max(5, +e.target.value || 15); saveState(); };
@@ -2549,6 +2645,225 @@ function checkDeadlines() {
 setInterval(checkDeadlines, 30000);
 
 /* ============================================================
+   === SUPABASE CLOUD SYNC ===
+   ============================================================ */
+const SUPABASE_URL = 'https://ibgqnffacdsxwrpeetuy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6KjBneBJ21YUtsts8XusSQ_uPaST0kl';
+const SYNC_STORAGE_KEY = 'kayzen-sync';
+
+const CLIENT_ID = uid(); // har bir sessiya uchun yangi — echo aniqlash uchun
+let supabase = null;
+let realtimeChannel = null;
+let _syncPushTimer = null;
+
+function loadSyncSettings() {
+  try {
+    const raw = localStorage.getItem(SYNC_STORAGE_KEY);
+    if (!raw) return { enabled: false, syncId: null, lastSyncedAt: null };
+    return JSON.parse(raw);
+  } catch (e) { return { enabled: false, syncId: null, lastSyncedAt: null }; }
+}
+function saveSyncSettings() {
+  localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(state.sync));
+}
+
+async function loadSupabaseLib() {
+  if (window.supabase && window.supabase.createClient) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Supabase yuklanmadi'));
+    document.head.appendChild(s);
+  });
+}
+
+function setSyncStatus(status) {
+  state.syncStatus = status;
+  const el = document.getElementById('sync-status-text');
+  if (el) {
+    if (status === 'syncing') el.textContent = 'Sinxronlanmoqda...';
+    else if (status === 'error') el.textContent = 'Xato — internet tekshiring';
+    else el.textContent = state.sync.lastSyncedAt ? 'Sinxron: ' + relTime(state.sync.lastSyncedAt) : 'Tayyor';
+  }
+}
+function relTime(iso) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return Math.round(diff) + ' sek oldin';
+  if (diff < 3600) return Math.round(diff / 60) + ' daq oldin';
+  if (diff < 86400) return Math.round(diff / 3600) + ' soat oldin';
+  return Math.round(diff / 86400) + ' kun oldin';
+}
+
+async function initSync() {
+  if (!state.sync.enabled || !state.sync.syncId) return;
+  try {
+    setSyncStatus('syncing');
+    await loadSupabaseLib();
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    await fetchFromCloud({ initial: true });
+    subscribeRealtime();
+  } catch (e) {
+    console.error('Sync init xato', e);
+    setSyncStatus('error');
+  }
+}
+
+async function fetchFromCloud(opts = {}) {
+  if (!supabase || !state.sync.syncId) return;
+  try {
+    setSyncStatus('syncing');
+    const { data, error } = await supabase
+      .from('kayzen_data')
+      .select('data, updated_at')
+      .eq('sync_id', state.sync.syncId)
+      .maybeSingle();
+    if (error) throw error;
+    if (data && data.data) {
+      const remote = data.data;
+      const remoteT = remote._t || 0;
+      const localT = state.data._t || 0;
+      if (remoteT > localT) {
+        applyRemoteData(remote);
+        if (!opts.initial) showToast('☁️ Cloud dan yangilandi');
+      } else if (localT > remoteT) {
+        await pushToCloud();
+      }
+    } else {
+      // hali cloudda hech narsa yo'q — lokalini push qilamiz
+      await pushToCloud();
+    }
+    state.sync.lastSyncedAt = new Date().toISOString();
+    saveSyncSettings();
+    setSyncStatus('idle');
+  } catch (e) {
+    console.error('Fetch xato', e);
+    setSyncStatus('error');
+  }
+}
+
+function applyRemoteData(remote) {
+  // remote ma'lumotlarni state.data ga tatbiq qilamiz
+  // _clientId ni saqlamaymiz
+  const newData = { ...remote };
+  delete newData._clientId;
+  // kerakli kalitlar mavjudligini ta'minlash
+  if (!newData.tasks) newData.tasks = [];
+  if (!newData.checklist) newData.checklist = { items: [], days: {} };
+  if (!newData.kayzen) newData.kayzen = { questions: [], entries: {} };
+  if (!newData.categories) newData.categories = [];
+  if (!newData.pomodoro) newData.pomodoro = { workMin: 25, shortBreakMin: 5, longBreakMin: 15, sessions: [] };
+  if (!newData.settings) newData.settings = { theme: 'light' };
+  state.data = newData;
+  saveStateLocal();
+  // Hozirgi view ni qayta render qilish
+  renderView();
+}
+
+async function pushToCloud() {
+  if (!supabase || !state.sync.syncId) return;
+  try {
+    setSyncStatus('syncing');
+    state.data._t = Date.now();
+    saveStateLocal();
+    const dataToSend = { ...state.data, _clientId: CLIENT_ID };
+    const { error } = await supabase
+      .from('kayzen_data')
+      .upsert({ sync_id: state.sync.syncId, data: dataToSend }, { onConflict: 'sync_id' });
+    if (error) throw error;
+    state.sync.lastSyncedAt = new Date().toISOString();
+    saveSyncSettings();
+    setSyncStatus('idle');
+  } catch (e) {
+    console.error('Push xato', e);
+    setSyncStatus('error');
+  }
+}
+
+function scheduleCloudPush() {
+  if (!state.sync.enabled || !supabase) return;
+  clearTimeout(_syncPushTimer);
+  _syncPushTimer = setTimeout(pushToCloud, 1500);
+}
+
+function subscribeRealtime() {
+  if (!supabase || !state.sync.syncId) return;
+  if (realtimeChannel) { try { supabase.removeChannel(realtimeChannel); } catch(e){} }
+  realtimeChannel = supabase
+    .channel('kayzen-' + state.sync.syncId)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'kayzen_data',
+      filter: 'sync_id=eq.' + state.sync.syncId,
+    }, (payload) => {
+      if (!payload.new || !payload.new.data) return;
+      const remote = payload.new.data;
+      if (remote._clientId === CLIENT_ID) return; // o'z echo'miz
+      const remoteT = remote._t || 0;
+      const localT = state.data._t || 0;
+      if (remoteT > localT) {
+        applyRemoteData(remote);
+        showToast('☁️ Yangilandi (boshqa qurilmadan)');
+      }
+    })
+    .subscribe();
+}
+
+function unsubscribeRealtime() {
+  if (realtimeChannel && supabase) {
+    try { supabase.removeChannel(realtimeChannel); } catch(e){}
+    realtimeChannel = null;
+  }
+}
+
+async function enableCloudSync() {
+  if (!state.sync.syncId) state.sync.syncId = uid();
+  state.sync.enabled = true;
+  saveSyncSettings();
+  await initSync();
+}
+
+function disableCloudSync() {
+  state.sync.enabled = false;
+  saveSyncSettings();
+  unsubscribeRealtime();
+  supabase = null;
+}
+
+async function connectWithSyncKey(key) {
+  state.sync.syncId = key.trim();
+  state.sync.enabled = true;
+  saveSyncSettings();
+  try {
+    setSyncStatus('syncing');
+    await loadSupabaseLib();
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data, error } = await supabase
+      .from('kayzen_data')
+      .select('data')
+      .eq('sync_id', state.sync.syncId)
+      .maybeSingle();
+    if (error) throw error;
+    if (data && data.data) {
+      applyRemoteData(data.data);
+      showToast('☁️ Cloud ma\'lumotlari yuklandi');
+    } else {
+      await pushToCloud();
+      showToast('☁️ Yangi kalit ulandi');
+    }
+    state.sync.lastSyncedAt = new Date().toISOString();
+    saveSyncSettings();
+    subscribeRealtime();
+    setSyncStatus('idle');
+  } catch (e) {
+    console.error(e);
+    setSyncStatus('error');
+    showToast('Xato: ' + (e.message || 'ulanish muvaffaqiyatsiz'));
+  }
+}
+
+/* ============================================================
    === PWA: MANIFEST + SERVICE WORKER ===
    ============================================================ */
 function installPWA() {
@@ -2605,6 +2920,27 @@ function installPWA() {
 function init() {
   installPWA();
 
+  // Sync settings yuklash
+  state.sync = loadSyncSettings();
+
+  // Telegram Mini App aniqlash
+  if (window.Telegram && window.Telegram.WebApp) {
+    try {
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+      if (user && user.id) {
+        const tgSyncId = 'tg-' + user.id;
+        if (!state.sync.enabled || !state.sync.syncId) {
+          state.sync.enabled = true;
+          state.sync.syncId = tgSyncId;
+          saveSyncSettings();
+        }
+      }
+    } catch (e) { console.warn('Telegram init xato', e); }
+  }
+
   // Tab buttons
   document.querySelectorAll('.tab').forEach(b => {
     b.onclick = () => switchView(b.dataset.view);
@@ -2620,6 +2956,11 @@ function init() {
   // Initial render
   renderTopbar();
   renderView();
+
+  // Cloud sync (agar yoqilgan bo'lsa)
+  if (state.sync.enabled && state.sync.syncId) {
+    initSync();
+  }
 
   // Onboarding
   if (!state.data.settings.firstRunCompleted) {
