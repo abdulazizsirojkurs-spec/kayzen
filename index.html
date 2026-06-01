@@ -10,8 +10,8 @@
 <title>Kayzen — Samaradorlik</title>
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script async src="https://telegram.org/js/telegram-web-app.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 /* === DESIGN TOKENS === */
@@ -2668,30 +2668,45 @@ let supabase = null;
 let realtimeChannel = null;
 let _syncPushTimer = null;
 
-function initSupabaseClient() {
+async function waitForSupabaseLib(timeoutMs = 8000) {
+  if (window.supabase && window.supabase.createClient) return true;
+  const start = Date.now();
+  while (!window.supabase || !window.supabase.createClient) {
+    if (Date.now() - start > timeoutMs) return false;
+    await new Promise(r => setTimeout(r, 80));
+  }
+  return true;
+}
+
+async function initSupabaseClient() {
   if (supabase) return supabase;
-  if (!window.supabase || !window.supabase.createClient) {
-    console.error('Supabase yuklanmagan');
+  const ok = await waitForSupabaseLib();
+  if (!ok) {
+    console.warn('[Kayzen] Supabase yuklanmadi (timeout)');
     return null;
   }
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  });
-  // Sessiya o'zgarishlarini kuzatish
-  supabase.auth.onAuthStateChange((event, session) => {
-    state.auth.session = session;
-    state.auth.user = session ? session.user : null;
-    if (event === 'SIGNED_IN') {
-      startCloudSync();
-    } else if (event === 'SIGNED_OUT') {
-      unsubscribeRealtime();
-    }
-  });
-  return supabase;
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+    supabase.auth.onAuthStateChange((event, session) => {
+      state.auth.session = session;
+      state.auth.user = session ? session.user : null;
+      if (event === 'SIGNED_IN') {
+        startCloudSync();
+      } else if (event === 'SIGNED_OUT') {
+        unsubscribeRealtime();
+      }
+    });
+    return supabase;
+  } catch (e) {
+    console.error('[Kayzen] Supabase init xato:', e);
+    return null;
+  }
 }
 
 function relTime(iso) {
@@ -2713,8 +2728,8 @@ function setSyncStatus(status) {
 
 /* === AUTH FUNCTIONS === */
 async function checkAuth() {
-  const sb = initSupabaseClient();
-  if (!sb) return null;
+  const sb = await initSupabaseClient();
+  if (!sb) { state.auth.ready = true; return null; }
   try {
     const { data: { session } } = await sb.auth.getSession();
     state.auth.session = session;
@@ -2729,7 +2744,7 @@ async function checkAuth() {
 }
 
 async function signUpEmail(email, password) {
-  const sb = initSupabaseClient();
+  const sb = await initSupabaseClient();
   if (!sb) throw new Error('Supabase yuklanmadi');
   const { data, error } = await sb.auth.signUp({ email, password });
   if (error) throw error;
@@ -2740,7 +2755,7 @@ async function signUpEmail(email, password) {
 }
 
 async function signInEmail(email, password) {
-  const sb = initSupabaseClient();
+  const sb = await initSupabaseClient();
   if (!sb) throw new Error('Supabase yuklanmadi');
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -2750,7 +2765,7 @@ async function signInEmail(email, password) {
 }
 
 async function signOut() {
-  const sb = initSupabaseClient();
+  const sb = await initSupabaseClient();
   if (sb) {
     try { await sb.auth.signOut(); } catch(e) {}
   }
@@ -2760,7 +2775,7 @@ async function signOut() {
 }
 
 async function resetPassword(email) {
-  const sb = initSupabaseClient();
+  const sb = await initSupabaseClient();
   if (!sb) throw new Error('Supabase yuklanmadi');
   const { error } = await sb.auth.resetPasswordForEmail(email);
   if (error) throw error;
@@ -2768,7 +2783,7 @@ async function resetPassword(email) {
 
 /* === CLOUD SYNC FUNCTIONS === */
 async function startCloudSync() {
-  const sb = initSupabaseClient();
+  const sb = await initSupabaseClient();
   if (!sb || !state.auth.user) return;
   await fetchFromCloud({ initial: true });
   subscribeRealtime();
@@ -3012,53 +3027,24 @@ function installPWA() {
       { src: "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='#FAFAF9'/><path d='M144 268 L224 348 L380 188' stroke='#2563EB' stroke-width='48' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>"), sizes: '512x512', type: 'image/svg+xml' },
     ],
   };
-  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('link');
-  link.rel = 'manifest';
-  link.href = url;
-  document.head.appendChild(link);
+  try {
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = url;
+    document.head.appendChild(link);
+  } catch (e) {}
 
-  // Service worker — network-first, cache-fallback (yangi versiya doimo yuklanadi)
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    const swCode = `
-      const CACHE = 'kayzen-v3';
-      self.addEventListener('install', e => self.skipWaiting());
-      self.addEventListener('activate', e => {
-        e.waitUntil(
-          caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-            .then(() => self.clients.claim())
-        );
-      });
-      self.addEventListener('fetch', e => {
-        if (e.request.method !== 'GET') return;
-        // Network-first: doimo eng yangi versiyani olishga harakat qilamiz
-        e.respondWith(
-          fetch(e.request).then(fresh => {
-            if (fresh && fresh.status === 200 && fresh.type === 'basic') {
-              const copy = fresh.clone();
-              caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-            }
-            return fresh;
-          }).catch(() => caches.match(e.request))
-        );
-      });
-    `;
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swUrl).then(reg => {
-      reg.update();
-      // Eski SW ni darhol almashtirish
-      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  // OLD service workers ni butunlay olib tashlash (blob URL SW ko'p muammoga olib keldi)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(reg => reg.unregister().catch(() => {}));
     }).catch(() => {});
-
-    // Yangi versiya kelganda darhol foydalanish
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
+    // Cache'lar ham tozalansin
+    if (window.caches) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
+    }
   }
 }
 
