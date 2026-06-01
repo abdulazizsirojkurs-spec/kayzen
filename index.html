@@ -3066,7 +3066,10 @@ function installPWA() {
    === INIT ===
    ============================================================ */
 async function init() {
-  installPWA();
+  console.log('[Kayzen] init boshlandi');
+  try {
+    installPWA();
+  } catch (e) { console.error('[Kayzen] installPWA xato:', e); }
 
   // Telegram Mini App detection (basic, faqat ready/expand)
   if (window.Telegram && window.Telegram.WebApp) {
@@ -3077,33 +3080,49 @@ async function init() {
   }
 
   // Tab buttons
-  document.querySelectorAll('.tab').forEach(b => {
-    b.onclick = () => switchView(b.dataset.view);
-  });
-  // FAB
-  document.getElementById('fab').onclick = () => {
-    if (state.currentView === 'tasks') openQuickAdd();
-    else if (state.currentView === 'checklist') openHabitsManager();
-    else if (state.currentView === 'kayzen') openKayzenManager();
-    else if (state.currentView === 'stats') exportAll();
-  };
+  try {
+    document.querySelectorAll('.tab').forEach(b => {
+      b.onclick = () => switchView(b.dataset.view);
+    });
+    document.getElementById('fab').onclick = () => {
+      if (state.currentView === 'tasks') openQuickAdd();
+      else if (state.currentView === 'checklist') openHabitsManager();
+      else if (state.currentView === 'kayzen') openKayzenManager();
+      else if (state.currentView === 'stats') exportAll();
+    };
+  } catch (e) { console.error('[Kayzen] handlers xato:', e); }
 
   // Initial render
-  renderTopbar();
-  renderView();
-
-  // Auth check va cloud sync (agar logged-in bo'lsa)
-  await checkAuth();
-  if (state.auth.user) {
-    startCloudSync();
+  try {
+    renderTopbar();
+    renderView();
+    console.log('[Kayzen] dastlabki render OK');
+  } catch (e) {
+    console.error('[Kayzen] render xato:', e);
+    // Fallback ko'rsatish
+    const v = document.getElementById('view-tasks');
+    if (v) v.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Yuklanishda xato. Sahifani yangilang yoki cache tozalang.</div>';
   }
-  // Stats render yangilanishi uchun
-  if (state.currentView === 'stats') renderStats();
+
+  // Auth check va cloud sync (background, asosiy renderga ta'sir qilmasin)
+  (async () => {
+    try {
+      await checkAuth();
+      if (state.auth.user) {
+        startCloudSync();
+      }
+      if (state.currentView === 'stats') renderStats();
+    } catch (e) {
+      console.error('[Kayzen] auth xato:', e);
+    }
+  })();
 
   // Onboarding (faqat birinchi marta)
   if (!state.data.settings.firstRunCompleted) {
     setTimeout(maybeOnboarding, 400);
   }
+
+  console.log('[Kayzen] init tugadi');
 }
 
 document.addEventListener('DOMContentLoaded', init);
