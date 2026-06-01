@@ -11,6 +11,7 @@
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 /* === DESIGN TOKENS === */
@@ -950,7 +951,7 @@ function saveStateLocal() {
 }
 function saveState() {
   saveStateLocal();
-  if (state.sync && state.sync.enabled) scheduleCloudPush();
+  if (state.auth && state.auth.user) scheduleCloudPush();
 }
 
 const state = {
@@ -961,8 +962,9 @@ const state = {
   taskFilter: { time: 'today' },
   expandedTasks: new Set(),
   pomodoro: null, // {running, mode, secondsLeft, taskId, sessionCount}
-  sync: { enabled: false, syncId: null, lastSyncedAt: null }, // pastda load qilinadi
+  auth: { user: null, session: null, ready: false },
   syncStatus: 'idle',
+  lastSyncedAt: null,
 };
 
 /* === DATE HELPERS === */
@@ -2050,106 +2052,62 @@ function renderStats() {
     </div>`);
   v.appendChild(pomoSect);
 
-  // === CLOUD SYNC karta (Stats body ichida — top-bar gear ishlamasa ishlatish uchun) ===
-  const syncEnabled = state.sync && state.sync.enabled;
-  const syncId = (state.sync && state.sync.syncId) || '';
-  const isTgUser = syncEnabled && syncId.startsWith('tg-');
-  const tgUser = state.sync && state.sync.tgUser;
-  const inTelegram = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user);
-
-  const syncCard = el(`
+  // === AKKAUNT karta (Stats body ichida) ===
+  const user = state.auth.user;
+  const accCard = el(`
     <div class="stats-section">
-      <h3>☁️ Cloud Sync</h3>
+      <h3>📧 Akkaunt</h3>
       <div class="card" style="background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border-color:#BFDBFE;">
-        ${syncEnabled ? `
+        ${user ? `
           <div class="row between" style="margin-bottom:10px;">
-            <div style="flex:1;">
-              <div style="font-weight:600;color:#1E40AF;">${tgUser ? '🤖 ' + escapeHtml(tgUser.name) : '✓ Yoqilgan'}</div>
-              <div class="small muted" style="margin-top:2px;">${isTgUser ? (inTelegram ? 'Telegram Mini App orqali' : 'Telegram orqali ulangan') : 'Telefon ↔ noutbuk sinxron'}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;color:#1E40AF;font-size:15px;">✓ Kirgan</div>
+              <div class="small" style="margin-top:2px;color:var(--text);word-break:break-all;">${escapeHtml(user.email)}</div>
             </div>
-            <button class="btn btn-secondary" id="cs-toggle" style="min-height:38px;padding:8px 16px;">Chiqish</button>
+            <button class="btn btn-secondary" id="ac-logout" style="min-height:38px;padding:8px 16px;">Chiqish</button>
           </div>
-          <div style="background:white;border-radius:8px;padding:10px;margin-top:8px;">
-            <div class="small muted" style="margin-bottom:4px;">Sync kalit:</div>
-            <div style="font-family:monospace;font-size:11px;word-break:break-all;color:var(--text);">${escapeHtml(syncId)}</div>
-            <div class="row" style="gap:6px;margin-top:10px;">
-              <button class="btn btn-secondary" id="cs-copy" style="flex:1;min-height:38px;">📋 Nusxa</button>
-              <button class="btn btn-secondary" id="cs-sync-now" style="flex:1;min-height:38px;">↻ Yangilash</button>
-            </div>
+          <div class="row" style="gap:6px;margin-top:10px;">
+            <button class="btn btn-secondary" id="ac-sync-now" style="flex:1;min-height:38px;">↻ Yangilash</button>
           </div>
-          <div class="small muted" style="margin-top:8px;text-align:center;" id="cs-status-stats">${state.sync.lastSyncedAt ? 'Sinxron: ' + relTime(state.sync.lastSyncedAt) : 'Tayyor'}</div>
+          <div class="small muted sync-status-text" style="margin-top:8px;text-align:center;">${state.lastSyncedAt ? 'Sinxron: ' + relTime(state.lastSyncedAt) : 'Tayyor'}</div>
         ` : `
           <div style="text-align:center;padding:8px 0 4px;">
-            <div style="font-size:22px;margin-bottom:6px;">🤖</div>
-            <div style="font-weight:600;color:#1E40AF;font-size:15px;margin-bottom:4px;">Telegram bilan ulaning</div>
-            <div class="small muted" style="margin-bottom:14px;padding:0 12px;">Bir bosishda kirasiz. Telefon, noutbuk va planshetda bir xil ma'lumot.</div>
-            <div id="tg-login-host" style="display:flex;justify-content:center;min-height:48px;align-items:center;"></div>
-            <div class="small muted" style="margin-top:10px;font-size:11px;">Tugma ko'rinmasa: BotFather'da <code>/setdomain</code> → <code>kayzen-rho.vercel.app</code></div>
-          </div>
-          <div style="border-top:1px solid #BFDBFE;margin:14px 0 10px;padding-top:12px;">
-            <button class="btn btn-secondary btn-block" id="cs-paste-first">🔑 Yoki — sync kalit bilan ulanish</button>
+            <div style="font-size:32px;margin-bottom:8px;">☁️</div>
+            <div style="font-weight:700;color:#1E40AF;font-size:17px;margin-bottom:4px;">Cloud sync uchun kiring</div>
+            <div class="small muted" style="margin-bottom:14px;padding:0 12px;">Bir marta ro'yxatdan o'tasiz, keyin telefon, noutbuk va Telegram'da bir xil ma'lumot ko'rinadi.</div>
+            <div class="row" style="gap:8px;">
+              <button class="btn btn-primary btn-block" id="ac-signup" style="background:#1E40AF;">Ro'yxatdan o'tish</button>
+              <button class="btn btn-secondary btn-block" id="ac-login">Kirish</button>
+            </div>
           </div>
         `}
       </div>
     </div>`);
-  v.appendChild(syncCard);
+  v.appendChild(accCard);
 
-  // Telegram login widget (faqat sync yoqilmagan paytda)
-  if (!syncEnabled) {
-    setTimeout(() => renderTelegramLoginButton('tg-login-host'), 50);
-  }
-
-  // Sync handlerlar
-  const csToggle = syncCard.querySelector('#cs-toggle');
-  if (csToggle) {
-    csToggle.onclick = async () => {
-      if (state.sync.enabled) {
-        confirmDialog("Cloud syncni o'chirasizmi?", () => {
-          disableCloudSync();
-          renderStats();
-        });
-      } else {
-        csToggle.textContent = 'Yoqilmoqda...';
-        await enableCloudSync();
+  // Handlerlar
+  const acLogout = accCard.querySelector('#ac-logout');
+  if (acLogout) {
+    acLogout.onclick = () => {
+      confirmDialog("Akkauntdan chiqasizmi? Local ma'lumotlar saqlanib qoladi.", async () => {
+        await signOut();
         renderStats();
-        showToast('☁️ Cloud sync yoqildi');
-      }
+        showToast('Chiqildi');
+      });
     };
   }
-  const csCopy = syncCard.querySelector('#cs-copy');
-  if (csCopy) {
-    csCopy.onclick = () => {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(state.sync.syncId).then(() => showToast('Kalit nusxalandi ✓'));
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = state.sync.syncId;
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); ta.remove();
-        showToast('Kalit nusxalandi ✓');
-      }
-    };
-  }
-  const csSyncNow = syncCard.querySelector('#cs-sync-now');
-  if (csSyncNow) {
-    csSyncNow.onclick = async () => {
-      csSyncNow.textContent = '⏳';
+  const acSyncNow = accCard.querySelector('#ac-sync-now');
+  if (acSyncNow) {
+    acSyncNow.onclick = async () => {
+      acSyncNow.textContent = '⏳';
       await fetchFromCloud();
       renderStats();
     };
   }
-  const csPasteBtns = [syncCard.querySelector('#cs-paste'), syncCard.querySelector('#cs-paste-first')].filter(Boolean);
-  csPasteBtns.forEach(btn => {
-    btn.onclick = () => {
-      const key = prompt("Boshqa qurilmadagi sync kalitni kiriting:");
-      if (key && key.trim()) {
-        confirmDialog("Bu qurilmadagi ma'lumotlar Cloud bilan almashtiriladi. Davom etamizmi?", async () => {
-          await connectWithSyncKey(key.trim());
-          renderStats();
-        });
-      }
-    };
-  });
+  const acSignup = accCard.querySelector('#ac-signup');
+  if (acSignup) acSignup.onclick = () => openAuthScreen('signup');
+  const acLogin = accCard.querySelector('#ac-login');
+  if (acLogin) acLogin.onclick = () => openAuthScreen('login');
 
   // Eksport tugmasi
   const backup = el(`
@@ -2471,9 +2429,7 @@ function playBeep() {
    ============================================================ */
 function openSettings() {
   const s = state.data.settings;
-  const syncEnabled = state.sync.enabled;
-  const syncId = state.sync.syncId || '';
-  const isTgUser = syncEnabled && syncId.startsWith('tg-');
+  const user = state.auth.user;
   const content = el(`
     <div>
       <div class="modal-head">
@@ -2483,31 +2439,24 @@ function openSettings() {
       </div>
       <div class="modal-body">
         <div class="form-section">
-          <label class="form-label">☁️ Cloud Sync</label>
-          <div class="settings-row">
-            <div style="flex:1;min-width:0;">
-              <div class="label">${syncEnabled ? 'Yoqilgan' : 'O\'chirilgan'}</div>
-              <div class="desc">${syncEnabled ? (isTgUser ? 'Telegram orqali ulangan' : 'Telefon va noutbuk avtomatik sinxron') : 'Ma\'lumotlar faqat shu qurilmada'}</div>
-            </div>
-            <button class="btn ${syncEnabled ? 'btn-secondary' : 'btn-primary'}" id="sync-toggle" style="min-height:36px;padding:6px 14px;">${syncEnabled ? 'O\'chirish' : 'Yoqish'}</button>
-          </div>
-          ${syncEnabled ? `
+          <label class="form-label">📧 Akkaunt</label>
+          ${user ? `
             <div class="settings-row">
               <div style="flex:1;min-width:0;">
-                <div class="label">Sync kalit (sirli — saqlang)</div>
-                <div class="desc" style="font-family:monospace;font-size:10px;word-break:break-all;color:var(--text);background:var(--surface-2);padding:6px 8px;border-radius:6px;margin-top:4px;">${escapeHtml(syncId)}</div>
+                <div class="label">${escapeHtml(user.email)}</div>
+                <div class="desc sync-status-text">${state.lastSyncedAt ? 'Sinxron: ' + relTime(state.lastSyncedAt) : 'Tayyor'}</div>
               </div>
-              <button class="btn btn-secondary" id="sync-copy" style="min-height:36px;padding:6px 12px;margin-left:8px;">Nusxa</button>
+              <button class="btn btn-secondary" id="ac-logout-set" style="min-height:36px;padding:6px 14px;">Chiqish</button>
             </div>
+          ` : `
             <div class="settings-row">
               <div>
-                <div class="label">Holat</div>
-                <div class="desc" id="sync-status-text">${state.sync.lastSyncedAt ? 'Sinxron: ' + relTime(state.sync.lastSyncedAt) : 'Tayyor'}</div>
+                <div class="label">Kirgan emassiz</div>
+                <div class="desc">Cloud sync ishlamaydi</div>
               </div>
-              <button class="btn btn-ghost" id="sync-force" style="min-height:36px;padding:6px 12px;" aria-label="Hozir sinxronlash">↻</button>
+              <button class="btn btn-primary" id="ac-login-set" style="min-height:36px;padding:6px 14px;">Kirish</button>
             </div>
-            <button class="btn btn-secondary btn-block" id="sync-paste" style="margin-top:8px;">📥 Boshqa qurilmadan ulanish (kalit kiritish)</button>
-          ` : ''}
+          `}
         </div>
 
         <div class="form-section">
@@ -2562,60 +2511,21 @@ function openSettings() {
 
   content.querySelector('#close').onclick = closeSheet;
 
-  // Sync handlerlar
-  const syncToggleBtn = content.querySelector('#sync-toggle');
-  if (syncToggleBtn) {
-    syncToggleBtn.onclick = async () => {
-      if (state.sync.enabled) {
-        confirmDialog("Cloud syncni o'chirasizmi? Ma'lumotlar shu qurilmada qoladi, lekin avtomatik sinxron to'xtaydi.", () => {
-          disableCloudSync();
-          closeSheet();
-          openSettings();
-        });
-      } else {
-        syncToggleBtn.textContent = 'Yoqilmoqda...';
-        await enableCloudSync();
+  // Akkaunt handlerlar
+  const acLogoutSet = content.querySelector('#ac-logout-set');
+  if (acLogoutSet) {
+    acLogoutSet.onclick = () => {
+      confirmDialog("Akkauntdan chiqasizmi? Local ma'lumotlar saqlanib qoladi.", async () => {
+        await signOut();
         closeSheet();
-        openSettings();
-        showToast("☁️ Cloud sync yoqildi");
-      }
+        renderView();
+        showToast('Chiqildi');
+      });
     };
   }
-  const syncCopyBtn = content.querySelector('#sync-copy');
-  if (syncCopyBtn) {
-    syncCopyBtn.onclick = () => {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(state.sync.syncId).then(() => showToast('Kalit nusxalandi ✓'));
-      } else {
-        // fallback
-        const ta = document.createElement('textarea');
-        ta.value = state.sync.syncId;
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); ta.remove();
-        showToast('Kalit nusxalandi ✓');
-      }
-    };
-  }
-  const syncForceBtn = content.querySelector('#sync-force');
-  if (syncForceBtn) {
-    syncForceBtn.onclick = async () => {
-      syncForceBtn.style.transform = 'rotate(180deg)';
-      await fetchFromCloud();
-      setTimeout(() => syncForceBtn.style.transform = '', 400);
-    };
-  }
-  const syncPasteBtn = content.querySelector('#sync-paste');
-  if (syncPasteBtn) {
-    syncPasteBtn.onclick = () => {
-      const key = prompt("Boshqa qurilmadagi sync kalitni kiriting:");
-      if (key && key.trim()) {
-        confirmDialog("Bu qurilmadagi ma'lumotlar Cloud bilan almashtiriladi. Davom etamizmi?", async () => {
-          await connectWithSyncKey(key.trim());
-          closeSheet();
-          openSettings();
-        });
-      }
-    };
+  const acLoginSet = content.querySelector('#ac-login-set');
+  if (acLoginSet) {
+    acLoginSet.onclick = () => { closeSheet(); openAuthScreen('login'); };
   }
 
   content.querySelector('#p-w').onchange = (e) => { state.data.pomodoro.workMin = Math.max(5, +e.target.value || 25); saveState(); };
@@ -2748,48 +2658,42 @@ function checkDeadlines() {
 setInterval(checkDeadlines, 30000);
 
 /* ============================================================
-   === SUPABASE CLOUD SYNC ===
+   === SUPABASE AUTH + CLOUD SYNC ===
    ============================================================ */
 const SUPABASE_URL = 'https://ibgqnffacdsxwrpeetuy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6KjBneBJ21YUtsts8XusSQ_uPaST0kl';
-const SYNC_STORAGE_KEY = 'kayzen-sync';
 
 const CLIENT_ID = uid(); // har bir sessiya uchun yangi — echo aniqlash uchun
 let supabase = null;
 let realtimeChannel = null;
 let _syncPushTimer = null;
 
-function loadSyncSettings() {
-  try {
-    const raw = localStorage.getItem(SYNC_STORAGE_KEY);
-    if (!raw) return { enabled: false, syncId: null, lastSyncedAt: null };
-    return JSON.parse(raw);
-  } catch (e) { return { enabled: false, syncId: null, lastSyncedAt: null }; }
-}
-function saveSyncSettings() {
-  localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(state.sync));
-}
-
-async function loadSupabaseLib() {
-  if (window.supabase && window.supabase.createClient) return;
-  await new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    s.onload = resolve;
-    s.onerror = () => reject(new Error('Supabase yuklanmadi'));
-    document.head.appendChild(s);
-  });
-}
-
-function setSyncStatus(status) {
-  state.syncStatus = status;
-  const el = document.getElementById('sync-status-text');
-  if (el) {
-    if (status === 'syncing') el.textContent = 'Sinxronlanmoqda...';
-    else if (status === 'error') el.textContent = 'Xato — internet tekshiring';
-    else el.textContent = state.sync.lastSyncedAt ? 'Sinxron: ' + relTime(state.sync.lastSyncedAt) : 'Tayyor';
+function initSupabaseClient() {
+  if (supabase) return supabase;
+  if (!window.supabase || !window.supabase.createClient) {
+    console.error('Supabase yuklanmagan');
+    return null;
   }
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+  // Sessiya o'zgarishlarini kuzatish
+  supabase.auth.onAuthStateChange((event, session) => {
+    state.auth.session = session;
+    state.auth.user = session ? session.user : null;
+    if (event === 'SIGNED_IN') {
+      startCloudSync();
+    } else if (event === 'SIGNED_OUT') {
+      unsubscribeRealtime();
+    }
+  });
+  return supabase;
 }
+
 function relTime(iso) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
   if (diff < 60) return Math.round(diff) + ' sek oldin';
@@ -2798,28 +2702,86 @@ function relTime(iso) {
   return Math.round(diff / 86400) + ' kun oldin';
 }
 
-async function initSync() {
-  if (!state.sync.enabled || !state.sync.syncId) return;
+function setSyncStatus(status) {
+  state.syncStatus = status;
+  document.querySelectorAll('.sync-status-text').forEach(el => {
+    if (status === 'syncing') el.textContent = 'Sinxronlanmoqda...';
+    else if (status === 'error') el.textContent = 'Xato — internet tekshiring';
+    else el.textContent = state.lastSyncedAt ? 'Sinxron: ' + relTime(state.lastSyncedAt) : 'Tayyor';
+  });
+}
+
+/* === AUTH FUNCTIONS === */
+async function checkAuth() {
+  const sb = initSupabaseClient();
+  if (!sb) return null;
   try {
-    setSyncStatus('syncing');
-    await loadSupabaseLib();
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    await fetchFromCloud({ initial: true });
-    subscribeRealtime();
+    const { data: { session } } = await sb.auth.getSession();
+    state.auth.session = session;
+    state.auth.user = session ? session.user : null;
+    state.auth.ready = true;
+    return state.auth.user;
   } catch (e) {
-    console.error('Sync init xato', e);
-    setSyncStatus('error');
+    console.error('checkAuth error', e);
+    state.auth.ready = true;
+    return null;
   }
 }
 
+async function signUpEmail(email, password) {
+  const sb = initSupabaseClient();
+  if (!sb) throw new Error('Supabase yuklanmadi');
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) throw error;
+  // Email confirmation OFF bo'lgani uchun — darhol session keladi
+  state.auth.session = data.session;
+  state.auth.user = data.user;
+  return data;
+}
+
+async function signInEmail(email, password) {
+  const sb = initSupabaseClient();
+  if (!sb) throw new Error('Supabase yuklanmadi');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  state.auth.session = data.session;
+  state.auth.user = data.user;
+  return data;
+}
+
+async function signOut() {
+  const sb = initSupabaseClient();
+  if (sb) {
+    try { await sb.auth.signOut(); } catch(e) {}
+  }
+  state.auth.user = null;
+  state.auth.session = null;
+  unsubscribeRealtime();
+}
+
+async function resetPassword(email) {
+  const sb = initSupabaseClient();
+  if (!sb) throw new Error('Supabase yuklanmadi');
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  if (error) throw error;
+}
+
+/* === CLOUD SYNC FUNCTIONS === */
+async function startCloudSync() {
+  const sb = initSupabaseClient();
+  if (!sb || !state.auth.user) return;
+  await fetchFromCloud({ initial: true });
+  subscribeRealtime();
+}
+
 async function fetchFromCloud(opts = {}) {
-  if (!supabase || !state.sync.syncId) return;
+  if (!supabase || !state.auth.user) return;
   try {
     setSyncStatus('syncing');
     const { data, error } = await supabase
       .from('kayzen_data')
       .select('data, updated_at')
-      .eq('sync_id', state.sync.syncId)
+      .eq('user_id', state.auth.user.id)
       .maybeSingle();
     if (error) throw error;
     if (data && data.data) {
@@ -2833,11 +2795,10 @@ async function fetchFromCloud(opts = {}) {
         await pushToCloud();
       }
     } else {
-      // hali cloudda hech narsa yo'q — lokalini push qilamiz
+      // Cloud bo'sh — local ma'lumotni push qilamiz
       await pushToCloud();
     }
-    state.sync.lastSyncedAt = new Date().toISOString();
-    saveSyncSettings();
+    state.lastSyncedAt = new Date().toISOString();
     setSyncStatus('idle');
   } catch (e) {
     console.error('Fetch xato', e);
@@ -2846,11 +2807,8 @@ async function fetchFromCloud(opts = {}) {
 }
 
 function applyRemoteData(remote) {
-  // remote ma'lumotlarni state.data ga tatbiq qilamiz
-  // _clientId ni saqlamaymiz
   const newData = { ...remote };
   delete newData._clientId;
-  // kerakli kalitlar mavjudligini ta'minlash
   if (!newData.tasks) newData.tasks = [];
   if (!newData.checklist) newData.checklist = { items: [], days: {} };
   if (!newData.kayzen) newData.kayzen = { questions: [], entries: {} };
@@ -2859,12 +2817,11 @@ function applyRemoteData(remote) {
   if (!newData.settings) newData.settings = { theme: 'light' };
   state.data = newData;
   saveStateLocal();
-  // Hozirgi view ni qayta render qilish
   renderView();
 }
 
 async function pushToCloud() {
-  if (!supabase || !state.sync.syncId) return;
+  if (!supabase || !state.auth.user) return;
   try {
     setSyncStatus('syncing');
     state.data._t = Date.now();
@@ -2872,10 +2829,9 @@ async function pushToCloud() {
     const dataToSend = { ...state.data, _clientId: CLIENT_ID };
     const { error } = await supabase
       .from('kayzen_data')
-      .upsert({ sync_id: state.sync.syncId, data: dataToSend }, { onConflict: 'sync_id' });
+      .upsert({ user_id: state.auth.user.id, data: dataToSend }, { onConflict: 'user_id' });
     if (error) throw error;
-    state.sync.lastSyncedAt = new Date().toISOString();
-    saveSyncSettings();
+    state.lastSyncedAt = new Date().toISOString();
     setSyncStatus('idle');
   } catch (e) {
     console.error('Push xato', e);
@@ -2884,30 +2840,30 @@ async function pushToCloud() {
 }
 
 function scheduleCloudPush() {
-  if (!state.sync.enabled || !supabase) return;
+  if (!state.auth.user || !supabase) return;
   clearTimeout(_syncPushTimer);
   _syncPushTimer = setTimeout(pushToCloud, 1500);
 }
 
 function subscribeRealtime() {
-  if (!supabase || !state.sync.syncId) return;
+  if (!supabase || !state.auth.user) return;
   if (realtimeChannel) { try { supabase.removeChannel(realtimeChannel); } catch(e){} }
   realtimeChannel = supabase
-    .channel('kayzen-' + state.sync.syncId)
+    .channel('kayzen-' + state.auth.user.id)
     .on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'kayzen_data',
-      filter: 'sync_id=eq.' + state.sync.syncId,
+      filter: 'user_id=eq.' + state.auth.user.id,
     }, (payload) => {
       if (!payload.new || !payload.new.data) return;
       const remote = payload.new.data;
-      if (remote._clientId === CLIENT_ID) return; // o'z echo'miz
+      if (remote._clientId === CLIENT_ID) return;
       const remoteT = remote._t || 0;
       const localT = state.data._t || 0;
       if (remoteT > localT) {
         applyRemoteData(remote);
-        showToast('☁️ Yangilandi (boshqa qurilmadan)');
+        showToast('☁️ Yangilandi');
       }
     })
     .subscribe();
@@ -2920,90 +2876,122 @@ function unsubscribeRealtime() {
   }
 }
 
-async function enableCloudSync() {
-  if (!state.sync.syncId) state.sync.syncId = uid();
-  state.sync.enabled = true;
-  saveSyncSettings();
-  await initSync();
-}
+/* === AUTH UI — Login/Signup ekrani === */
+function openAuthScreen(mode) {
+  const isSignup = mode === 'signup';
+  const content = el(`
+    <div>
+      <div class="modal-head">
+        <button class="icon-btn" id="auth-close">${icons.x}</button>
+        <div class="modal-title">${isSignup ? "Ro'yxatdan o'tish" : 'Kirish'}</div>
+        <span></span>
+      </div>
+      <div class="modal-body" style="padding:24px 20px;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div style="width:60px;height:60px;margin:0 auto 12px;background:var(--accent-soft);border-radius:16px;display:flex;align-items:center;justify-content:center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${'#2563EB'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">${isSignup ? "Yangi akkaunt" : 'Xush kelibsiz'}</h2>
+          <p class="muted small">${isSignup ? "Email va parol kiriting" : "Email va parolingiz bilan kiring"}</p>
+        </div>
 
-function disableCloudSync() {
-  state.sync.enabled = false;
-  state.sync.tgUser = null;
-  state.sync.syncId = null;
-  state.sync.lastSyncedAt = null;
-  saveSyncSettings();
-  unsubscribeRealtime();
-  supabase = null;
-}
+        <div class="form-section">
+          <label class="form-label">Email</label>
+          <input class="input" id="auth-email" type="email" placeholder="email@misol.com" autocomplete="email" inputmode="email"/>
+        </div>
 
-async function connectWithSyncKey(key) {
-  state.sync.syncId = key.trim();
-  state.sync.enabled = true;
-  saveSyncSettings();
-  try {
-    setSyncStatus('syncing');
-    await loadSupabaseLib();
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const { data, error } = await supabase
-      .from('kayzen_data')
-      .select('data')
-      .eq('sync_id', state.sync.syncId)
-      .maybeSingle();
-    if (error) throw error;
-    if (data && data.data) {
-      applyRemoteData(data.data);
-      showToast('☁️ Cloud ma\'lumotlari yuklandi');
-    } else {
-      await pushToCloud();
-      showToast('☁️ Yangi kalit ulandi');
+        <div class="form-section">
+          <label class="form-label">Parol</label>
+          <input class="input" id="auth-pw" type="password" placeholder="Kamida 6 belgi" autocomplete="${isSignup ? 'new-password' : 'current-password'}"/>
+        </div>
+
+        <div id="auth-err" style="display:none;padding:10px 12px;background:var(--danger-soft);color:var(--danger);border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+
+        <button class="btn btn-primary btn-block" id="auth-submit" style="margin-bottom:10px;min-height:48px;font-size:16px;">${isSignup ? "Ro'yxatdan o'tish" : 'Kirish'}</button>
+
+        ${!isSignup ? `
+          <button class="btn btn-ghost btn-block" id="auth-forgot" style="margin-bottom:10px;font-size:13px;">Parolni unutdingizmi?</button>
+        ` : ''}
+
+        <div style="text-align:center;padding-top:12px;border-top:1px solid var(--border);margin-top:12px;">
+          <span class="small muted">${isSignup ? "Akkaunt bormi? " : "Hisobingiz yo'qmi? "}</span>
+          <button class="btn btn-ghost" id="auth-switch" style="display:inline-flex;padding:4px 8px;min-height:auto;font-weight:600;color:var(--accent);">${isSignup ? 'Kirish' : "Ro'yxatdan o'tish"}</button>
+        </div>
+      </div>
+    </div>`);
+  openSheet(content, { full: true });
+
+  const emailInput = content.querySelector('#auth-email');
+  const pwInput = content.querySelector('#auth-pw');
+  const submitBtn = content.querySelector('#auth-submit');
+  const errEl = content.querySelector('#auth-err');
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }
+  function clearErr() { errEl.style.display = 'none'; }
+
+  async function submit() {
+    clearErr();
+    const email = emailInput.value.trim();
+    const pw = pwInput.value;
+    if (!email || !email.includes('@')) { showErr("To'g'ri email kiriting"); return; }
+    if (pw.length < 6) { showErr('Parol kamida 6 belgi bo\'lishi kerak'); return; }
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Yuklanmoqda...';
+    try {
+      if (isSignup) {
+        await signUpEmail(email, pw);
+        showToast('✓ Akkaunt yaratildi');
+      } else {
+        await signInEmail(email, pw);
+        showToast('✓ Xush kelibsiz!');
+      }
+      closeSheet();
+      // Auth state change → startCloudSync avtomatik chaqiriladi
+      // Lekin push uchun ham trigger qilamiz
+      setTimeout(() => startCloudSync(), 200);
+      renderView();
+      renderTopbar();
+    } catch (e) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = isSignup ? "Ro'yxatdan o'tish" : 'Kirish';
+      let msg = e.message || 'Xato';
+      // Foydalanuvchi tushunadigan tilga tarjima
+      if (msg.includes('Invalid login credentials')) msg = "Email yoki parol noto'g'ri";
+      if (msg.includes('User already registered')) msg = "Bu email allaqachon ro'yxatda. Kirish tugmasini bosing.";
+      if (msg.includes('Password should be at least')) msg = 'Parol juda qisqa';
+      if (msg.includes('rate limit')) msg = 'Juda ko\'p urinish. Bir oz kuting.';
+      showErr(msg);
     }
-    state.sync.lastSyncedAt = new Date().toISOString();
-    saveSyncSettings();
-    subscribeRealtime();
-    setSyncStatus('idle');
-  } catch (e) {
-    console.error(e);
-    setSyncStatus('error');
-    showToast('Xato: ' + (e.message || 'ulanish muvaffaqiyatsiz'));
   }
-}
 
-/* === TELEGRAM LOGIN WIDGET (PWA dan kirish) === */
-const TG_BOT_USERNAME = 'kayzen_samaradorlik_bot';
+  submitBtn.onclick = submit;
+  pwInput.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+  emailInput.onkeydown = (e) => { if (e.key === 'Enter') pwInput.focus(); };
 
-// Global callback Telegram widget chaqirilganda
-window.onKayzenTelegramAuth = async function(user) {
-  if (!user || !user.id) {
-    showToast("Telegram login xatoligi");
-    return;
-  }
-  state.sync.tgUser = {
-    id: user.id,
-    name: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
-    username: user.username || null,
-    photo: user.photo_url || null,
+  content.querySelector('#auth-close').onclick = closeSheet;
+  content.querySelector('#auth-switch').onclick = () => {
+    closeSheet();
+    setTimeout(() => openAuthScreen(isSignup ? 'login' : 'signup'), 50);
   };
-  saveSyncSettings();
-  const syncId = 'tg-' + user.id;
-  showToast('🤖 ' + (user.first_name || 'Telegram') + ' sifatida ulanmoqda...');
-  await connectWithSyncKey(syncId);
-  if (state.currentView === 'stats') renderStats();
-};
 
-function renderTelegramLoginButton(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = 'https://telegram.org/js/telegram-widget.js?22';
-  script.setAttribute('data-telegram-login', TG_BOT_USERNAME);
-  script.setAttribute('data-size', 'large');
-  script.setAttribute('data-radius', '10');
-  script.setAttribute('data-onauth', 'onKayzenTelegramAuth(user)');
-  script.setAttribute('data-request-access', 'write');
-  container.appendChild(script);
+  const forgotBtn = content.querySelector('#auth-forgot');
+  if (forgotBtn) {
+    forgotBtn.onclick = async () => {
+      const email = emailInput.value.trim();
+      if (!email || !email.includes('@')) { showErr("Avval emailni kiriting"); return; }
+      try {
+        await resetPassword(email);
+        showToast('Reset link emailga yuborildi');
+      } catch (e) {
+        showErr(e.message || 'Xato');
+      }
+    };
+  }
+
+  setTimeout(() => emailInput.focus(), 200);
 }
 
 /* ============================================================
@@ -3077,35 +3065,15 @@ function installPWA() {
 /* ============================================================
    === INIT ===
    ============================================================ */
-function init() {
+async function init() {
   installPWA();
 
-  // Sync settings yuklash
-  state.sync = loadSyncSettings();
-
-  // Telegram Mini App aniqlash
+  // Telegram Mini App detection (basic, faqat ready/expand)
   if (window.Telegram && window.Telegram.WebApp) {
     try {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-      const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
-      if (user && user.id) {
-        const tgSyncId = 'tg-' + user.id;
-        // Telegram user ma'lumotlarini saqlash
-        state.sync.tgUser = {
-          id: user.id,
-          name: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
-          username: user.username || null,
-          photo: user.photo_url || null,
-        };
-        if (!state.sync.enabled || !state.sync.syncId) {
-          state.sync.enabled = true;
-          state.sync.syncId = tgSyncId;
-        }
-        saveSyncSettings();
-      }
-    } catch (e) { console.warn('Telegram init xato', e); }
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    } catch (e) {}
   }
 
   // Tab buttons
@@ -3124,23 +3092,17 @@ function init() {
   renderTopbar();
   renderView();
 
-  // Cloud sync (agar yoqilgan bo'lsa)
-  if (state.sync.enabled && state.sync.syncId) {
-    initSync();
+  // Auth check va cloud sync (agar logged-in bo'lsa)
+  await checkAuth();
+  if (state.auth.user) {
+    startCloudSync();
   }
+  // Stats render yangilanishi uchun
+  if (state.currentView === 'stats') renderStats();
 
-  // Onboarding
+  // Onboarding (faqat birinchi marta)
   if (!state.data.settings.firstRunCompleted) {
     setTimeout(maybeOnboarding, 400);
-  }
-
-  // Backup reminder
-  const last = state.data.settings.lastBackupAt;
-  if (last) {
-    const diff = Date.now() - new Date(last).getTime();
-    if (diff > 14 * 24 * 60 * 60 * 1000) {
-      setTimeout(() => showToast('Backup yuklab olish vaqti keldi', 'Eksport', exportAll), 3000);
-    }
   }
 }
 
