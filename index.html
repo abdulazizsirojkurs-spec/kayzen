@@ -11,20 +11,20 @@
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <script async src="https://telegram.org/js/telegram-web-app.js"></script>
-<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase JS o'z domenimizdan (Vercel proxy orqali) — tashqi CDN bloklangan tarmoqlarda ham ishlaydi -->
+<script async src="/api/supabase"></script>
 <script>
-// CDN fallback — agar jsdelivr yuklanmasa, unpkg dan urinadi
+// Backup: agar 4 sekundda yuklanmasa, jsdelivr CDN'dan ham urinadi
 window.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     if (!window.supabase || !window.supabase.createClient) {
-      console.log('[Kayzen] jsdelivr ishlamadi, unpkg dan urinish...');
+      console.log('[Kayzen] /api/supabase yuklanmadi, jsdelivr dan urinish...');
       const s = document.createElement('script');
-      s.src = 'https://unpkg.com/@supabase/supabase-js@2';
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
       s.async = true;
-      s.onerror = () => console.error('[Kayzen] Supabase CDN fallback ham ishlamadi');
       document.head.appendChild(s);
     }
-  }, 2500);
+  }, 4000);
 });
 </script>
 
