@@ -12,6 +12,21 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FAFAF9'/><path d='M28 52 L44 68 L74 36' stroke='%232563EB' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <script async src="https://telegram.org/js/telegram-web-app.js"></script>
 <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// CDN fallback — agar jsdelivr yuklanmasa, unpkg dan urinadi
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (!window.supabase || !window.supabase.createClient) {
+      console.log('[Kayzen] jsdelivr ishlamadi, unpkg dan urinish...');
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/@supabase/supabase-js@2';
+      s.async = true;
+      s.onerror = () => console.error('[Kayzen] Supabase CDN fallback ham ishlamadi');
+      document.head.appendChild(s);
+    }
+  }, 2500);
+});
+</script>
 
 <style>
 /* === DESIGN TOKENS === */
@@ -454,6 +469,103 @@ a { color: var(--accent); text-decoration: none; }
   display: flex; align-items: flex-end; justify-content: center;
   animation: backdropIn 200ms ease-out;
 }
+.modal-backdrop.mandatory { background: var(--bg); animation: none; }
+.modal-backdrop.mandatory .modal { animation: none; }
+.app-hidden { visibility: hidden; pointer-events: none; }
+
+/* === SPLASH (yuklanish ekrani) === */
+#splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  transition: opacity 250ms ease-out;
+}
+#splash.fade { opacity: 0; pointer-events: none; }
+#splash.hidden { display: none; }
+.splash-logo {
+  width: 68px; height: 68px;
+  background: var(--accent);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+  box-shadow: 0 8px 24px rgba(37,99,235,0.35);
+}
+.splash-logo svg { width: 36px; height: 36px; }
+.splash-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.splash-subtitle { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+.splash-spinner {
+  width: 28px; height: 28px;
+  border: 3px solid var(--surface-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: kayspin 0.8s linear infinite;
+  margin-top: 8px;
+}
+@keyframes kayspin { to { transform: rotate(360deg); } }
+.splash-err {
+  background: var(--danger-soft);
+  color: var(--danger);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  max-width: 280px;
+  text-align: center;
+  margin-top: 8px;
+}
+.splash-err-btn {
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: var(--accent);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Auth ekran dizayni */
+.auth-screen {
+  padding: 40px 20px 20px;
+  display: flex; flex-direction: column;
+  min-height: 100%;
+}
+.auth-brand { text-align: center; margin-bottom: 28px; padding-top: 12px; }
+.auth-logo {
+  width: 64px; height: 64px;
+  margin: 0 auto 14px;
+  background: var(--accent);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.35);
+}
+.auth-logo svg { width: 36px; height: 36px; color: white; }
+.auth-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+.auth-subtitle { color: var(--text-muted); font-size: 14px; }
+.auth-features {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.auth-features div { padding: 6px 0; font-size: 13px; color: var(--text); }
+.auth-form { margin-bottom: 14px; }
+.auth-form .input { font-size: 16px; padding: 14px; }
+.auth-switch-row {
+  text-align: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.auth-switch-row button {
+  display: inline-flex;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 4px 8px;
+}
 @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
 .modal {
   width: 100%; max-width: 480px;
@@ -798,7 +910,18 @@ a { color: var(--accent); text-decoration: none; }
 </head>
 <body>
 
-<div id="app">
+<!-- Splash: birinchi yuklanish paytida ko'rinadi -->
+<div id="splash">
+  <div class="splash-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+  </div>
+  <div class="splash-title">Kayzen</div>
+  <div class="splash-subtitle">Yuklanmoqda...</div>
+  <div class="splash-spinner" id="splash-spinner"></div>
+  <div class="splash-err" id="splash-err" style="display:none;"></div>
+</div>
+
+<div id="app" class="app-hidden">
 
   <header id="topbar">
     <div class="topbar-row">
@@ -1051,12 +1174,14 @@ function showToast(text, actionLabel, actionFn, duration = 4500) {
 
 function openSheet(content, opts = {}) {
   const host = document.getElementById('modal-host');
-  const backdrop = el('<div class="modal-backdrop"></div>');
+  const backdrop = el(`<div class="modal-backdrop ${opts.mandatory ? 'mandatory' : ''}"></div>`);
   const modal = el(`<div class="modal ${opts.full ? 'modal-full' : ''}"></div>`);
   if (!opts.full) modal.appendChild(el('<div class="handle-bar"></div>'));
   modal.appendChild(content);
   backdrop.appendChild(modal);
-  backdrop.onclick = (e) => { if (e.target === backdrop) closeSheet(); };
+  if (!opts.mandatory) {
+    backdrop.onclick = (e) => { if (e.target === backdrop) closeSheet(); };
+  }
   host.appendChild(backdrop);
   document.body.style.overflow = 'hidden';
   return backdrop;
@@ -2668,14 +2793,40 @@ let supabase = null;
 let realtimeChannel = null;
 let _syncPushTimer = null;
 
-async function waitForSupabaseLib(timeoutMs = 8000) {
+async function waitForSupabaseLib(timeoutMs = 10000) {
   if (window.supabase && window.supabase.createClient) return true;
   const start = Date.now();
   while (!window.supabase || !window.supabase.createClient) {
-    if (Date.now() - start > timeoutMs) return false;
+    const elapsed = Date.now() - start;
+    if (elapsed > timeoutMs) {
+      console.error('[Kayzen] Supabase timeout. window.supabase =', typeof window.supabase);
+      return false;
+    }
     await new Promise(r => setTimeout(r, 80));
   }
+  console.log('[Kayzen] Supabase yuklandi (' + (Date.now() - start) + 'ms)');
   return true;
+}
+
+function hideSplash() {
+  const sp = document.getElementById('splash');
+  if (!sp) return;
+  sp.classList.add('fade');
+  setTimeout(() => sp.classList.add('hidden'), 280);
+}
+
+function showSplashError(msg, retry) {
+  const sp = document.getElementById('splash');
+  const spinner = document.getElementById('splash-spinner');
+  const errEl = document.getElementById('splash-err');
+  if (!sp || !errEl) return;
+  if (spinner) spinner.style.display = 'none';
+  errEl.innerHTML = `<div>${msg}</div>${retry ? '<button class="splash-err-btn" id="splash-retry">Qayta urinish</button>' : ''}`;
+  errEl.style.display = 'block';
+  if (retry) {
+    const btn = document.getElementById('splash-retry');
+    if (btn) btn.onclick = () => location.reload();
+  }
 }
 
 async function initSupabaseClient() {
@@ -2772,6 +2923,11 @@ async function signOut() {
   state.auth.user = null;
   state.auth.session = null;
   unsubscribeRealtime();
+  resetSyncFlag();
+  // App ni yashirib, login ekran ochamiz
+  hideMainApp();
+  closeAllSheets();
+  setTimeout(() => openAuthScreen('login', { mandatory: true }), 100);
 }
 
 async function resetPassword(email) {
@@ -2782,12 +2938,21 @@ async function resetPassword(email) {
 }
 
 /* === CLOUD SYNC FUNCTIONS === */
+let _syncStarted = false;
 async function startCloudSync() {
-  const sb = await initSupabaseClient();
-  if (!sb || !state.auth.user) return;
-  await fetchFromCloud({ initial: true });
-  subscribeRealtime();
+  if (_syncStarted) return; // idempotent — duplikat oldini olish
+  _syncStarted = true;
+  try {
+    const sb = await initSupabaseClient();
+    if (!sb || !state.auth.user) { _syncStarted = false; return; }
+    await fetchFromCloud({ initial: true });
+    subscribeRealtime();
+  } catch (e) {
+    _syncStarted = false;
+    console.error('[Kayzen] startCloudSync xato:', e);
+  }
 }
+function resetSyncFlag() { _syncStarted = false; }
 
 async function fetchFromCloud(opts = {}) {
   if (!supabase || !state.auth.user) return;
@@ -2892,24 +3057,38 @@ function unsubscribeRealtime() {
 }
 
 /* === AUTH UI — Login/Signup ekrani === */
-function openAuthScreen(mode) {
+function openAuthScreen(mode, opts = {}) {
   const isSignup = mode === 'signup';
+  const mandatory = !!opts.mandatory;
   const content = el(`
-    <div>
-      <div class="modal-head">
-        <button class="icon-btn" id="auth-close">${icons.x}</button>
-        <div class="modal-title">${isSignup ? "Ro'yxatdan o'tish" : 'Kirish'}</div>
-        <span></span>
-      </div>
-      <div class="modal-body" style="padding:24px 20px;">
-        <div style="text-align:center;margin-bottom:24px;">
-          <div style="width:60px;height:60px;margin:0 auto 12px;background:var(--accent-soft);border-radius:16px;display:flex;align-items:center;justify-content:center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${'#2563EB'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          </div>
-          <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">${isSignup ? "Yangi akkaunt" : 'Xush kelibsiz'}</h2>
-          <p class="muted small">${isSignup ? "Email va parol kiriting" : "Email va parolingiz bilan kiring"}</p>
+    <div class="auth-screen">
+      ${!mandatory ? `
+        <div class="modal-head" style="background:transparent;border:none;padding:0 0 12px 0;">
+          <button class="icon-btn" id="auth-close">${icons.x}</button>
+          <div class="modal-title">${isSignup ? "Ro'yxatdan o'tish" : 'Kirish'}</div>
+          <span></span>
         </div>
+      ` : ''}
 
+      <div class="auth-brand">
+        <div class="auth-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+        </div>
+        <div class="auth-title">Kayzen</div>
+        <div class="auth-subtitle">Shaxsiy samaradorlik</div>
+      </div>
+
+      ${mandatory && isSignup ? `
+        <div class="auth-features">
+          <div>📋 Vazifalar va subtask</div>
+          <div>✅ Kunlik 14 ta odat</div>
+          <div>🧘 Kayzen tahlili</div>
+          <div>📊 Statistika, streak, Pomodoro</div>
+          <div>☁️ Telefon, noutbuk, Telegram — bir xil</div>
+        </div>
+      ` : ''}
+
+      <div class="auth-form">
         <div class="form-section">
           <label class="form-label">Email</label>
           <input class="input" id="auth-email" type="email" placeholder="email@misol.com" autocomplete="email" inputmode="email"/>
@@ -2922,19 +3101,19 @@ function openAuthScreen(mode) {
 
         <div id="auth-err" style="display:none;padding:10px 12px;background:var(--danger-soft);color:var(--danger);border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
 
-        <button class="btn btn-primary btn-block" id="auth-submit" style="margin-bottom:10px;min-height:48px;font-size:16px;">${isSignup ? "Ro'yxatdan o'tish" : 'Kirish'}</button>
+        <button class="btn btn-primary btn-block" id="auth-submit" style="margin-bottom:10px;min-height:50px;font-size:16px;font-weight:600;">${isSignup ? "Ro'yxatdan o'tish" : 'Kirish'}</button>
 
         ${!isSignup ? `
-          <button class="btn btn-ghost btn-block" id="auth-forgot" style="margin-bottom:10px;font-size:13px;">Parolni unutdingizmi?</button>
+          <button class="btn btn-ghost btn-block" id="auth-forgot" style="margin-bottom:6px;font-size:13px;">Parolni unutdingizmi?</button>
         ` : ''}
+      </div>
 
-        <div style="text-align:center;padding-top:12px;border-top:1px solid var(--border);margin-top:12px;">
-          <span class="small muted">${isSignup ? "Akkaunt bormi? " : "Hisobingiz yo'qmi? "}</span>
-          <button class="btn btn-ghost" id="auth-switch" style="display:inline-flex;padding:4px 8px;min-height:auto;font-weight:600;color:var(--accent);">${isSignup ? 'Kirish' : "Ro'yxatdan o'tish"}</button>
-        </div>
+      <div class="auth-switch-row">
+        ${isSignup ? "Akkauntingiz bormi? " : "Hisobingiz yo'qmi? "}
+        <button id="auth-switch">${isSignup ? 'Kirish' : "Ro'yxatdan o'tish"}</button>
       </div>
     </div>`);
-  openSheet(content, { full: true });
+  openSheet(content, { full: true, mandatory });
 
   const emailInput = content.querySelector('#auth-email');
   const pwInput = content.querySelector('#auth-pw');
@@ -2952,7 +3131,7 @@ function openAuthScreen(mode) {
     const email = emailInput.value.trim();
     const pw = pwInput.value;
     if (!email || !email.includes('@')) { showErr("To'g'ri email kiriting"); return; }
-    if (pw.length < 6) { showErr('Parol kamida 6 belgi bo\'lishi kerak'); return; }
+    if (pw.length < 6) { showErr("Parol kamida 6 belgi bo'lishi kerak"); return; }
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ Yuklanmoqda...';
     try {
@@ -2963,21 +3142,17 @@ function openAuthScreen(mode) {
         await signInEmail(email, pw);
         showToast('✓ Xush kelibsiz!');
       }
-      closeSheet();
-      // Auth state change → startCloudSync avtomatik chaqiriladi
-      // Lekin push uchun ham trigger qilamiz
-      setTimeout(() => startCloudSync(), 200);
-      renderView();
-      renderTopbar();
+      closeAllSheets();
+      await showMainApp();
     } catch (e) {
       submitBtn.disabled = false;
       submitBtn.textContent = isSignup ? "Ro'yxatdan o'tish" : 'Kirish';
       let msg = e.message || 'Xato';
-      // Foydalanuvchi tushunadigan tilga tarjima
       if (msg.includes('Invalid login credentials')) msg = "Email yoki parol noto'g'ri";
       if (msg.includes('User already registered')) msg = "Bu email allaqachon ro'yxatda. Kirish tugmasini bosing.";
       if (msg.includes('Password should be at least')) msg = 'Parol juda qisqa';
-      if (msg.includes('rate limit')) msg = 'Juda ko\'p urinish. Bir oz kuting.';
+      if (msg.toLowerCase().includes('rate limit')) msg = "Juda ko'p urinish. Bir oz kuting.";
+      if (msg.toLowerCase().includes('email not confirmed')) msg = "Email tasdiqlanmagan. Supabase'da 'Confirm email' o'chirilgan bo'lishi kerak.";
       showErr(msg);
     }
   }
@@ -2986,10 +3161,12 @@ function openAuthScreen(mode) {
   pwInput.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
   emailInput.onkeydown = (e) => { if (e.key === 'Enter') pwInput.focus(); };
 
-  content.querySelector('#auth-close').onclick = closeSheet;
+  const closeBtn = content.querySelector('#auth-close');
+  if (closeBtn) closeBtn.onclick = closeSheet;
+
   content.querySelector('#auth-switch').onclick = () => {
     closeSheet();
-    setTimeout(() => openAuthScreen(isSignup ? 'login' : 'signup'), 50);
+    setTimeout(() => openAuthScreen(isSignup ? 'login' : 'signup', { mandatory }), 50);
   };
 
   const forgotBtn = content.querySelector('#auth-forgot');
@@ -3051,22 +3228,14 @@ function installPWA() {
 /* ============================================================
    === INIT ===
    ============================================================ */
-async function init() {
-  console.log('[Kayzen] init boshlandi');
-  try {
-    installPWA();
-  } catch (e) { console.error('[Kayzen] installPWA xato:', e); }
+async function showMainApp() {
+  const appEl = document.getElementById('app');
+  if (!appEl) return;
+  appEl.classList.remove('app-hidden');
 
-  // Telegram Mini App detection (basic, faqat ready/expand)
-  if (window.Telegram && window.Telegram.WebApp) {
-    try {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
-    } catch (e) {}
-  }
-
-  // Tab buttons
-  try {
+  // Tab buttons va FAB handlerlari (faqat 1 marta o'rnatamiz)
+  if (!appEl.dataset.wired) {
+    appEl.dataset.wired = '1';
     document.querySelectorAll('.tab').forEach(b => {
       b.onclick = () => switchView(b.dataset.view);
     });
@@ -3076,39 +3245,73 @@ async function init() {
       else if (state.currentView === 'kayzen') openKayzenManager();
       else if (state.currentView === 'stats') exportAll();
     };
-  } catch (e) { console.error('[Kayzen] handlers xato:', e); }
+  }
 
-  // Initial render
   try {
     renderTopbar();
     renderView();
-    console.log('[Kayzen] dastlabki render OK');
   } catch (e) {
     console.error('[Kayzen] render xato:', e);
-    // Fallback ko'rsatish
-    const v = document.getElementById('view-tasks');
-    if (v) v.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Yuklanishda xato. Sahifani yangilang yoki cache tozalang.</div>';
   }
 
-  // Auth check va cloud sync (background, asosiy renderga ta'sir qilmasin)
-  (async () => {
-    try {
-      await checkAuth();
-      if (state.auth.user) {
-        startCloudSync();
-      }
+  // Cloud sync ishga tushirish
+  try {
+    if (state.auth.user) {
+      await startCloudSync();
       if (state.currentView === 'stats') renderStats();
-    } catch (e) {
-      console.error('[Kayzen] auth xato:', e);
     }
-  })();
+  } catch (e) { console.error('[Kayzen] sync xato:', e); }
 
-  // Onboarding (faqat birinchi marta)
+  // Onboarding (birinchi marta)
   if (!state.data.settings.firstRunCompleted) {
     setTimeout(maybeOnboarding, 400);
   }
+}
 
-  console.log('[Kayzen] init tugadi');
+function hideMainApp() {
+  const appEl = document.getElementById('app');
+  if (appEl) appEl.classList.add('app-hidden');
+}
+
+async function init() {
+  console.log('[Kayzen] init boshlandi');
+  try { installPWA(); } catch (e) { console.error('[Kayzen] installPWA xato:', e); }
+
+  // Telegram Mini App
+  if (window.Telegram && window.Telegram.WebApp) {
+    try {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    } catch (e) {}
+  }
+
+  // Supabase yuklanishini kutamiz (10 sek timeout)
+  const supabaseLoaded = await waitForSupabaseLib(10000);
+  if (!supabaseLoaded) {
+    console.error('[Kayzen] Supabase yuklanmadi (10 sek)');
+    // Cowork preview va boshqa cheklangan muhitlarda — Supabase CDN bloklanishi mumkin
+    showSplashError("Supabase CDN yuklanmadi. Bu Cowork preview bo'lsa — bu normal. Asl saytda (kayzen-rho.vercel.app) ishlaydi.", true);
+    return;
+  }
+
+  // Auth tekshirish
+  try {
+    await checkAuth();
+  } catch (e) {
+    console.error('[Kayzen] checkAuth xato:', e);
+  }
+
+  // Splash yashirish
+  hideSplash();
+
+  if (state.auth.user) {
+    await showMainApp();
+  } else {
+    hideMainApp();
+    openAuthScreen('signup', { mandatory: true });
+  }
+
+  console.log('[Kayzen] init tugadi · user:', state.auth.user ? state.auth.user.email : 'yoq');
 }
 
 document.addEventListener('DOMContentLoaded', init);
