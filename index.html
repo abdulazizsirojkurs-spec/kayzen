@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563EB'/><path d='M28 52 L44 68 L74 36' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <link rel="manifest" id="pwa-manifest">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 /* === DESIGN TOKENS === */
 :root {
@@ -392,7 +393,14 @@ a{color:var(--accent);text-decoration:none}
 </head>
 <body>
 
-<div id="app">
+<div id="splash-screen" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' style="width:80px;height:80px;margin-bottom:24px"><rect width='100' height='100' rx='22' fill='#2563EB'/><path d='M28 52 L44 68 L74 36' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>
+  <h1 style="font-size:24px;margin-bottom:8px">Kayzen ga xush kelibsiz</h1>
+  <p style="color:var(--text-muted);margin-bottom:32px;font-size:15px">Ilovadan foydalanish uchun Telegram orqali ro'yxatdan o'ting.</p>
+  <div id="tg-widget-container"></div>
+</div>
+
+<div id="app" style="display:none">
   <header id="topbar">
     <div class="topbar-row">
       <div>
@@ -534,7 +542,7 @@ function saveState(push = true){
 
 async function pushToCloud(){
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/sync_data`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/sync_data?on_conflict=sync_key`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1691,12 +1699,9 @@ function openAppSettings(){
         <div><div class="s-label">Eslatmalar</div><div class="s-desc">Deadline va pomodoro eslatmalari</div></div>
         <button class="toggle${d.settings.notificationsEnabled?' on':''}" id="notif-toggle" aria-label="Eslatmalar toggle"></button>
       </div>
-      <div class="settings-row" style="flex-direction:column;align-items:flex-start">
-        <div style="margin-bottom:8px"><div class="s-label">☁️ Cloud Sync (Sinxronizatsiya)</div><div class="s-desc">Telegram bot (/sync) dan olingan maxfiy kalitni kiriting. Barcha qurilmalaringizda bir xil bo'lishi kerak.</div></div>
-        <div style="display:flex;gap:8px;width:100%">
-          <input type="text" class="input" id="as-synckey" placeholder="Kalitni kiriting (masalan: tg-12345)" value="${esc(d.settings.syncKey||'')}" style="flex:1">
-          <button class="btn btn-primary" id="as-sync-btn">Saqlash</button>
-        </div>
+      <div class="settings-row">
+        <div><div class="s-label">Telegram Profil</div><div class="s-desc">Joriy qurilmadan profilingizni o'chirish</div></div>
+        <button class="btn btn-danger" id="as-logout" style="padding:6px 12px;min-height:36px">Chiqish</button>
       </div>
       <div class="settings-row">
         <div><div class="s-label">Ma'lumotlarni eksport qilish</div><div class="s-desc">Oxirgi backup: ${lastBackup}</div></div>
@@ -1718,12 +1723,11 @@ function openAppSettings(){
   };
   content.querySelector('#as-export').onclick=()=>{exportData();closeSheet()};
   content.querySelector('#as-import').onclick=()=>{importData();closeSheet()};
-  content.querySelector('#as-sync-btn').onclick=()=>{
-    const key = content.querySelector('#as-synckey').value.trim();
-    d.settings.syncKey = key;
-    saveState();
-    showToast('Sync kalit saqlandi');
-    if(key) { pullFromCloud(); pushToCloud(); }
+  content.querySelector('#as-logout').onclick=()=>{
+    if(confirm('Profildan chiqmoqchimisiz? Ma\'lumotlaringiz qurilmadan o\'chiriladi.')) {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
   };
 }
 
@@ -1766,8 +1770,35 @@ function checkBackupReminder(){
   if(diff>=14)showToast('Backup yuklab olish vaqti keldi 💾','Yuklab olish',()=>exportData());
 }
 
-// === INIT ===
-function init(){
+// === AUTH & INIT ===
+function onTelegramAuth(user) {
+  if(!user || !user.id) return;
+  state.data.settings.syncKey = 'tg-' + user.id;
+  saveState();
+  initApp();
+}
+
+function showLoginScreen() {
+  $('#app').style.display = 'none';
+  $('#splash-screen').style.display = 'flex';
+  
+  // Render telegram widget dynamically to use the placeholder bot name
+  const container = $('#tg-widget-container');
+  if(!container.innerHTML) {
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.setAttribute('data-telegram-login', 'kayzen_samaradorlik_bot');
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+    script.setAttribute('data-request-access', 'write');
+    container.appendChild(script);
+  }
+}
+
+async function initApp() {
+  $('#splash-screen').style.display = 'none';
+  $('#app').style.display = 'block';
+  
   setupPWA();
   // Bottom nav
   $$('.tab').forEach(btn=>{
@@ -1784,10 +1815,27 @@ function init(){
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape')closeSheet();
   });
+  
   updateTopbar();
   renderCurrentView();
   checkBackupReminder();
-  pullFromCloud(); // initial pull
+  await pullFromCloud(); // initial pull
+}
+
+function init(){
+  // Check Telegram Mini App user
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  if(tgUser && tgUser.id) {
+    state.data.settings.syncKey = 'tg-' + tgUser.id;
+    saveState(false);
+  }
+
+  // Check if logged in
+  if(state.data.settings.syncKey) {
+    initApp();
+  } else {
+    showLoginScreen();
+  }
 }
 
 init();
