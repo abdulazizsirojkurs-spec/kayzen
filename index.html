@@ -455,8 +455,26 @@ a{color:var(--accent);text-decoration:none}
    ============================================================ */
 
 // === STORAGE & STATE ===
-const STORAGE_KEY = 'kayzen-app-data';
+const STORAGE_KEY = 'kayzen_data';
 const APP_VERSION = 1;
+
+// === AUTH CONFIG ===
+let AUTH_KEY = localStorage.getItem('kayzen_sync_key') || null;
+// Migrate old syncKey
+if (!AUTH_KEY) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d?.settings?.syncKey) {
+        AUTH_KEY = d.settings.syncKey;
+        localStorage.setItem('kayzen_sync_key', AUTH_KEY);
+        d.settings.syncKey = '';
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+      }
+    }
+  } catch(e) {}
+}
 
 // === SUPABASE CONFIG ===
 const SUPABASE_URL = 'https://ibgqnffacdsxwrpeetuy.supabase.co';
@@ -524,16 +542,17 @@ function loadState(){
     if(!d.pomodoro) d.pomodoro={workMin:25,shortBreakMin:5,longBreakMin:15,sessions:[]};
     if(!d.settings) d.settings={theme:'light',notificationsEnabled:false,lastBackupAt:null,firstRunCompleted:false,iosInstallDismissed:false,notifBannerDismissed:false};
     if(d.settings.iosInstallDismissed===undefined) d.settings.iosInstallDismissed=false;
-    if(d.settings.syncKey===undefined) d.settings.syncKey='';
+    // syncKey is removed from data
     return d;
   }catch(e){return defaultData();}
 }
 
 function saveState(push = true){
+  if (!AUTH_KEY) return; // Qat'iy: Loginsiz hech narsa xotiraga yozilmaydi
   try{
     state.data.lastUpdated = Date.now();
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state.data));
-    if(push && state.data.settings.syncKey && SUPABASE_URL.startsWith('http')){
+    if(push && SUPABASE_URL.startsWith('http')){
       clearTimeout(_syncTimer);
       _syncTimer = setTimeout(pushToCloud, 2000);
     }
@@ -541,6 +560,7 @@ function saveState(push = true){
 }
 
 async function pushToCloud(){
+  if(!AUTH_KEY) return;
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/sync_data?on_conflict=sync_key`, {
       method: 'POST',
@@ -551,7 +571,7 @@ async function pushToCloud(){
         'Prefer': 'resolution=merge-duplicates'
       },
       body: JSON.stringify({
-        sync_key: state.data.settings.syncKey,
+        sync_key: AUTH_KEY,
         data: state.data,
         updated_at: new Date().toISOString()
       })
@@ -560,25 +580,30 @@ async function pushToCloud(){
   } catch(e){ console.error('Cloud ga ulanib bo`lmadi', e); }
 }
 
-async function pullFromCloud(){
-  if(!state.data.settings.syncKey || !SUPABASE_URL.startsWith('http')) return;
+async function pullFromCloud(forceOverride = false){
+  if(!AUTH_KEY || !SUPABASE_URL.startsWith('http')) return false;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/sync_data?sync_key=eq.${encodeURIComponent(state.data.settings.syncKey)}&select=data`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/sync_data?sync_key=eq.${encodeURIComponent(AUTH_KEY)}&select=data`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
     if(res.ok) {
       const rows = await res.json();
       if(rows.length > 0 && rows[0].data) {
         const cloudData = rows[0].data;
-        if(!state.data.lastUpdated || cloudData.lastUpdated > state.data.lastUpdated) {
+        // Agar majburiy bo'lsa (forceOverride) yoki bulutdagi ma'lumot yangiroq bo'lsa, mahalliy xotirani yangilaymiz
+        if(forceOverride || !state.data.lastUpdated || cloudData.lastUpdated > state.data.lastUpdated) {
           state.data = cloudData;
           saveState(false); // faqat lokal saqlaymiz, qayta cloudga yubormaymiz
           renderCurrentView();
-          showToast('☁️ Cloud bilan sinxronlandi');
         }
+        return true;
       }
     }
-  } catch(e){ console.error('Cloud dan olishda xato', e); }
+    return false;
+  } catch(e){ 
+    console.error('Cloud dan olishda xato', e); 
+    return false;
+  }
 }
 
 // Global state
@@ -1726,6 +1751,7 @@ function openAppSettings(){
   content.querySelector('#as-logout').onclick=()=>{
     if(confirm('Profildan chiqmoqchimisiz? Ma\'lumotlaringiz qurilmadan o\'chiriladi.')) {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('kayzen_sync_key');
       location.reload();
     }
   };
@@ -1773,11 +1799,19 @@ function checkBackupReminder(){
 // === AUTH & INIT ===
 async function onTelegramAuth(user) {
   if(!user || !user.id) return;
-  state.data.settings.syncKey = 'tg-' + user.id;
-  saveState(false); // Push qilmaymiz, faqat kalitni saqlaymiz
-  showToast('☁️ Sinxronlanmoqda...');
-  await initApp(); // Bulutdan ma'lumotni tortib oladi
-  saveState(true); // Endi saqlab bulutga yuboramiz
+  AUTH_KEY = 'tg-' + user.id;
+  localStorage.setItem('kayzen_sync_key', AUTH_KEY);
+  showToast('☁️ Ma\'lumotlar yuklanmoqda...');
+  
+  // Birinchi marta kirish - bulutdan majburiy tortib olinadi (agar bo'lsa)
+  const hasCloudData = await pullFromCloud(true);
+  if(!hasCloudData) {
+    // Agar bulutda umuman ma'lumot bo'lmasa, demak yangi foydalanuvchi. Hozirgi bo'sh holatni yuboramiz.
+    saveState(true);
+  } else {
+    // Agar bulutdan tortilgan bo'lsa, pullFromCloud o'zi saqlab qoyadi. Biz shunchaki ilovani ochamiz.
+  }
+  initApp();
 }
 
 function showLoginScreen() {
@@ -1797,7 +1831,7 @@ function showLoginScreen() {
   }
 }
 
-async function initApp() {
+function initApp() {
   $('#splash-screen').style.display = 'none';
   $('#app').style.display = 'block';
   
@@ -1818,22 +1852,33 @@ async function initApp() {
     if(e.key==='Escape')closeSheet();
   });
   
+  // Live Sync - Ilovaga qaytilganda (backgrounddan foregroundga)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && AUTH_KEY) {
+      pullFromCloud(false); // faqat o'zgargan bo'lsa tortamiz
+    }
+  });
+  
   updateTopbar();
   renderCurrentView();
   checkBackupReminder();
-  await pullFromCloud(); // initial pull
 }
 
-function init(){
+async function init(){
   // Check Telegram Mini App user
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if(tgUser && tgUser.id) {
-    state.data.settings.syncKey = 'tg-' + tgUser.id;
-    saveState(false);
+    AUTH_KEY = 'tg-' + tgUser.id;
+    localStorage.setItem('kayzen_sync_key', AUTH_KEY);
   }
 
   // Check if logged in
-  if(state.data.settings.syncKey) {
+  if(AUTH_KEY) {
+    // Ilovani ochishdan oldin majburiy bulutdan ma'lumotlarni tekshiramiz
+    $('#splash-screen').innerHTML = '<h3 style="margin-top:40vh;color:var(--accent)">☁️ Yuklanmoqda...</h3>';
+    $('#splash-screen').style.display = 'block';
+    
+    await pullFromCloud(false);
     initApp();
   } else {
     showLoginScreen();
