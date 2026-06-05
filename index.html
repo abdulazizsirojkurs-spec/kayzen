@@ -1771,11 +1771,13 @@ function checkBackupReminder(){
 }
 
 // === AUTH & INIT ===
-function onTelegramAuth(user) {
+async function onTelegramAuth(user) {
   if(!user || !user.id) return;
   state.data.settings.syncKey = 'tg-' + user.id;
-  saveState();
-  initApp();
+  saveState(false); // Push qilmaymiz, faqat kalitni saqlaymiz
+  showToast('☁️ Sinxronlanmoqda...');
+  await initApp(); // Bulutdan ma'lumotni tortib oladi
+  saveState(true); // Endi saqlab bulutga yuboramiz
 }
 
 function showLoginScreen() {
