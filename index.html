@@ -482,20 +482,27 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 let _syncTimer = null;
 
 const DEFAULT_HABITS = [
-  {emoji:'🌅',name:'Bomdodga turish'},
-  {emoji:'📖',name:'30 min Diniy kitob'},
+  {emoji:'🛏️',name:'Kecha erta uhladim'},
+  {emoji:'🌅',name:'Erta 06:00 gacha turish'},
+  {emoji:'💧',name:'Suv ichish'},
   {emoji:'🧘',name:'Kayzen vaqt'},
   {emoji:'📝',name:'Kunni rejalashtirdim'},
+  {emoji:'🏃',name:'Sport 15 minut'},
+  {emoji:'🚿',name:"Sovuq dush"},
+  {emoji:'🕌',name:"Bomdod o'qish"},
+  {emoji:'🍳',name:"To'g'ri nonushta qildim"},
   {emoji:'💊',name:'Vitamin ichdim'},
-  {emoji:'💝',name:'Moddiy ehson qilish'},
-  {emoji:'💰',name:'Finance report'},
-  {emoji:'📿',name:'2000 ta tasbeh'},
-  {emoji:'🏋️',name:'Trenirovka'},
-  {emoji:'📊',name:'Hisobotlarni tekshirdim'},
-  {emoji:'🥗',name:"To'g'ri ovqatlanish"},
+  {emoji:'📖',name:"Diniy kitob o'qish"},
   {emoji:'🤖',name:"AI bo'yicha dars ko'rdim"},
-  {emoji:'🎯',name:'Deep Work 1 (2 soat)'},
-  {emoji:'🎯',name:'Deep Work 2 (2 soat)'},
+  {emoji:'📊',name:'Hisobotlarni tekshirdim'},
+  {emoji:'💰',name:'Finance report'},
+  {emoji:'🎯',name:'DeepWork 1'},
+  {emoji:'🎯',name:'DeepWork 2'},
+  {emoji:'📿',name:'2000 ta tasbeh'},
+  {emoji:'🥗',name:"To'g'ri ovqatlandim"},
+  {emoji:'💝',name:'Moddiy ehson qildim'},
+  {emoji:'💬',name:'1 ta ijtimoiy suhbat'},
+  {emoji:'🍱',name:'Ertangi ovqatlarni tayyorlattim'},
 ];
 const DEFAULT_QUESTIONS = [
   "Kecha samaradorliging qanday bo'ldi?",
@@ -754,16 +761,13 @@ function getFilteredTasks(){
     if(q&&!t.title.toLowerCase().includes(q))return false;
     // Time filter
     if(time==='today'){
-      if(t.completed)return false;
       if(t.deadline){const dk=t.deadline.slice(0,10);if(dk>today)return false}
-      else if(time==='today'&&!t.deadline&&time!=='all'){}
     }
     if(time==='tomorrow'){
       const tmr=dateKey(addDays(new Date(),1));
       if(!t.deadline||t.deadline.slice(0,10)!==tmr)return false;
     }
     if(time==='week'){
-      if(t.completed)return false;
       if(t.deadline){const dk=t.deadline.slice(0,10);const wk=dateKey(addDays(new Date(),7));if(dk>wk)return false}
     }
     if(time==='done'){if(!t.completed)return false}
@@ -1272,6 +1276,8 @@ function openHabitSettings(){
         </div>
       </div>
       <div style="display:flex;gap:6px">
+        <button class="icon-btn habit-up-btn" aria-label="Tepaga" style="padding:4px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="icon-btn habit-down-btn" aria-label="Pastga" style="padding:4px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
         <button class="icon-btn habit-edit-btn" aria-label="Tahrir">${I.edit}</button>
         <button class="icon-btn habit-del-btn" aria-label="O'chirish" style="color:var(--danger)">${I.trash}</button>
       </div>
@@ -1285,6 +1291,37 @@ function openHabitSettings(){
   </div>`);
   const bd=openSheet(content);
   content.querySelector('#hs-close').onclick=closeSheet;
+  
+  // Reorder
+  content.querySelectorAll('.habit-up-btn').forEach((btn,i)=>{
+    btn.onclick=()=>{
+      if(i>0) {
+        const currentId = items[i].id;
+        const prevId = items[i-1].id;
+        const currentItem = state.data.checklist.items.find(x=>x.id===currentId);
+        const prevItem = state.data.checklist.items.find(x=>x.id===prevId);
+        const temp = currentItem.order;
+        currentItem.order = prevItem.order;
+        prevItem.order = temp;
+        saveState();closeSheet();openHabitSettings();renderChecklist();
+      }
+    };
+  });
+  content.querySelectorAll('.habit-down-btn').forEach((btn,i)=>{
+    btn.onclick=()=>{
+      if(i<items.length-1) {
+        const currentId = items[i].id;
+        const nextId = items[i+1].id;
+        const currentItem = state.data.checklist.items.find(x=>x.id===currentId);
+        const nextItem = state.data.checklist.items.find(x=>x.id===nextId);
+        const temp = currentItem.order;
+        currentItem.order = nextItem.order;
+        nextItem.order = temp;
+        saveState();closeSheet();openHabitSettings();renderChecklist();
+      }
+    };
+  });
+
   // Edit / delete
   content.querySelectorAll('.habit-edit-btn').forEach((btn,i)=>{
     btn.onclick=()=>{
@@ -1803,14 +1840,8 @@ async function onTelegramAuth(user) {
   localStorage.setItem('kayzen_sync_key', AUTH_KEY);
   showToast('☁️ Ma\'lumotlar yuklanmoqda...');
   
-  // Birinchi marta kirish - bulutdan majburiy tortib olinadi (agar bo'lsa)
   const hasCloudData = await pullFromCloud(true);
-  if(!hasCloudData) {
-    // Agar bulutda umuman ma'lumot bo'lmasa, demak yangi foydalanuvchi. Hozirgi bo'sh holatni yuboramiz.
-    saveState(true);
-  } else {
-    // Agar bulutdan tortilgan bo'lsa, pullFromCloud o'zi saqlab qoyadi. Biz shunchaki ilovani ochamiz.
-  }
+  if(!hasCloudData) saveState(true);
   initApp();
 }
 
@@ -1818,7 +1849,6 @@ function showLoginScreen() {
   $('#app').style.display = 'none';
   $('#splash-screen').style.display = 'flex';
   
-  // Render telegram widget dynamically to use the placeholder bot name
   const container = $('#tg-widget-container');
   if(!container.innerHTML) {
     const script = document.createElement('script');
@@ -1834,6 +1864,12 @@ function showLoginScreen() {
 function initApp() {
   $('#splash-screen').style.display = 'none';
   $('#app').style.display = 'block';
+  
+  // Eski checklistni yangisiga ko'chirish
+  if (state.data.checklist.items.length === 14 && state.data.checklist.items[0].name === 'Bomdodga turish') {
+    state.data.checklist.items = DEFAULT_HABITS.map((h,i)=>({id:uid(),emoji:h.emoji,name:h.name,order:i}));
+    saveState();
+  }
   
   setupPWA();
   // Bottom nav
