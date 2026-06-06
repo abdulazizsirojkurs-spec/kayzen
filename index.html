@@ -775,6 +775,12 @@ function getFilteredTasks(){
     // Status filter
     if(status!=='all'&&t.status!==status)return false;
     return true;
+  }).sort((a,b) => {
+    // Bajarilganlar tepaga chiqishi kerak
+    if (a.completed && !b.completed) return -1;
+    if (!a.completed && b.completed) return 1;
+    // Ikkalasi ham bajarilgan yoki bajarilmagan bo'lsa, o'z joyida qoladi
+    return 0;
   });
 }
 
