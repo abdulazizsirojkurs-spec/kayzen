@@ -759,7 +759,23 @@ function getFilteredTasks(){
     if(t.archived)return false;
     // Search
     if(q&&!t.title.toLowerCase().includes(q))return false;
-    // Time filter
+
+    // "Bajarilgan" filter — barcha bajarilgan vazifalar (har kungi)
+    if(time==='done'){return !!t.completed}
+
+    // Bajarilgan vazifa: faqat BUGUN bajarilgan bo'lsa "Bugun" filterda ko'rinadi.
+    // Boshqa filterlarda (Ertaga, Hafta, Barchasi) bajarilganlar ko'rinmaydi.
+    if(t.completed){
+      const completedDate = t.completedAt ? t.completedAt.slice(0,10) : null;
+      if(time==='today' && completedDate === today){
+        // Status filter ham qo'llanilsin
+        if(status!=='all'&&t.status!==status)return false;
+        return true;
+      }
+      return false;
+    }
+
+    // Hali bajarilmagan vazifalar — deadline bo'yicha filter
     if(time==='today'){
       if(t.deadline){const dk=t.deadline.slice(0,10);if(dk>today)return false}
     }
@@ -770,16 +786,17 @@ function getFilteredTasks(){
     if(time==='week'){
       if(t.deadline){const dk=t.deadline.slice(0,10);const wk=dateKey(addDays(new Date(),7));if(dk>wk)return false}
     }
-    if(time==='done'){if(!t.completed)return false}
     if(time==='all'){}
     // Status filter
     if(status!=='all'&&t.status!==status)return false;
     return true;
   }).sort((a,b) => {
-    // Bajarilganlar tepaga chiqishi kerak
-    if (a.completed && !b.completed) return -1;
-    if (!a.completed && b.completed) return 1;
-    // Ikkalasi ham bajarilgan yoki bajarilmagan bo'lsa, o'z joyida qoladi
+    // Bajarilganlar PASTGA — bajarilmaganlar tepada
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    // Deadline bo'yicha — yaqinroq deadline tepada
+    if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
     return 0;
   });
 }
@@ -1272,89 +1289,134 @@ function buildDateNav(currentKey,onChange){
 }
 
 function openHabitSettings(){
-  const items=[...state.data.checklist.items].sort((a,b)=>a.order-b.order);
+  // Order qiymatlarini normalize qilish (sort barqarorligi uchun)
+  const sorted=[...state.data.checklist.items].sort((a,b)=>a.order-b.order);
+  sorted.forEach((it,i)=>{ it.order=i; });
+
+  const items=sorted;
+  const total=items.length;
   const listHtml=items.map((it,i)=>`
-    <div class="settings-row" data-hid="${it.id}">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:20px">${it.emoji}</span>
-          <span class="s-label">${esc(it.name)}</span>
-        </div>
+    <div class="habit-set-row" data-hid="${it.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:var(--surface-2);border-radius:10px;font-size:22px;">${it.emoji}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(it.name)}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${i+1} / ${total}</div>
       </div>
-      <div style="display:flex;gap:6px">
-        <button class="icon-btn habit-up-btn" aria-label="Tepaga" style="padding:4px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
-        <button class="icon-btn habit-down-btn" aria-label="Pastga" style="padding:4px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
-        <button class="icon-btn habit-edit-btn" aria-label="Tahrir">${I.edit}</button>
-        <button class="icon-btn habit-del-btn" aria-label="O'chirish" style="color:var(--danger)">${I.trash}</button>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <button class="icon-btn habit-up-btn" aria-label="Tepaga" style="width:32px;height:24px;padding:0;background:var(--surface-2);border-radius:6px;${i===0?'opacity:0.3;':''}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="icon-btn habit-down-btn" aria-label="Pastga" style="width:32px;height:24px;padding:0;background:var(--surface-2);border-radius:6px;${i===total-1?'opacity:0.3;':''}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
+      <button class="icon-btn habit-edit-btn" aria-label="Tahrir" style="width:36px;height:36px;">${I.edit}</button>
+      <button class="icon-btn habit-del-btn" aria-label="O'chirish" style="width:36px;height:36px;color:var(--danger)">${I.trash}</button>
     </div>`).join('');
+
   const content=el(`<div>
-    <div class="modal-head"><span class="modal-title">Odatlarni boshqarish</span><button class="icon-btn" id="hs-close">${I.x}</button></div>
+    <div class="modal-head">
+      <button class="icon-btn" id="hs-close">${I.x}</button>
+      <span class="modal-title">Odatlarni boshqarish</span>
+      <button class="btn btn-primary" id="hs-add-top" style="min-height:34px;padding:5px 12px;font-size:13px;">${I.plus} Yangi</button>
+    </div>
     <div class="modal-body">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:0 4px;">⬆️ ⬇️ tugmalar bilan tartibni o'zgartiring. Tepadagilar chek list yuqorisida ko'rinadi.</div>
       <div id="habit-settings-list">${listHtml}</div>
-      <button class="btn btn-secondary btn-block" id="hs-add" style="margin-top:8px;gap:8px">${I.plus} Yangi odat qo'shish</button>
+      ${items.length===0?'<div class="empty-state"><div class="emoji">✅</div><div class="text">Hozircha odat yo\'q.<br>"Yangi" tugmasini bosing.</div></div>':''}
+      <button class="btn btn-secondary btn-block" id="hs-add" style="margin-top:12px;gap:8px">${I.plus} Yangi odat qo'shish</button>
     </div>
   </div>`);
-  const bd=openSheet(content);
+
+  openSheet(content,{full:true});
   content.querySelector('#hs-close').onclick=closeSheet;
-  
+
   // Reorder
   content.querySelectorAll('.habit-up-btn').forEach((btn,i)=>{
     btn.onclick=()=>{
-      if(i>0) {
-        const currentId = items[i].id;
-        const prevId = items[i-1].id;
-        const currentItem = state.data.checklist.items.find(x=>x.id===currentId);
-        const prevItem = state.data.checklist.items.find(x=>x.id===prevId);
-        const temp = currentItem.order;
-        currentItem.order = prevItem.order;
-        prevItem.order = temp;
-        saveState();closeSheet();openHabitSettings();renderChecklist();
-      }
+      if(i<=0)return;
+      const a=state.data.checklist.items.find(x=>x.id===items[i].id);
+      const b=state.data.checklist.items.find(x=>x.id===items[i-1].id);
+      const t=a.order; a.order=b.order; b.order=t;
+      saveState();closeSheet();openHabitSettings();renderChecklist();
     };
   });
   content.querySelectorAll('.habit-down-btn').forEach((btn,i)=>{
     btn.onclick=()=>{
-      if(i<items.length-1) {
-        const currentId = items[i].id;
-        const nextId = items[i+1].id;
-        const currentItem = state.data.checklist.items.find(x=>x.id===currentId);
-        const nextItem = state.data.checklist.items.find(x=>x.id===nextId);
-        const temp = currentItem.order;
-        currentItem.order = nextItem.order;
-        nextItem.order = temp;
-        saveState();closeSheet();openHabitSettings();renderChecklist();
-      }
+      if(i>=items.length-1)return;
+      const a=state.data.checklist.items.find(x=>x.id===items[i].id);
+      const b=state.data.checklist.items.find(x=>x.id===items[i+1].id);
+      const t=a.order; a.order=b.order; b.order=t;
+      saveState();closeSheet();openHabitSettings();renderChecklist();
     };
   });
 
-  // Edit / delete
+  // Edit (modal form)
   content.querySelectorAll('.habit-edit-btn').forEach((btn,i)=>{
-    btn.onclick=()=>{
-      const it=items[i];
-      const emoji=prompt('Emoji:',it.emoji);if(emoji===null)return;
-      const name=prompt('Nomi:',it.name);if(!name)return;
-      const orig=state.data.checklist.items.find(x=>x.id===it.id);
-      if(orig){orig.emoji=emoji.trim()||it.emoji;orig.name=name.trim();}
-      saveState();closeSheet();openHabitSettings();renderChecklist();
-    };
+    btn.onclick=()=>openHabitEditModal(items[i]);
   });
+  // Delete
   content.querySelectorAll('.habit-del-btn').forEach((btn,i)=>{
     btn.onclick=()=>{
       const it=items[i];
-      if(!confirm(`"${it.name}" odat o'chirilsinmi?`))return;
-      const copy={...it};
-      state.data.checklist.items=state.data.checklist.items.filter(x=>x.id!==it.id);
-      saveState();closeSheet();openHabitSettings();renderChecklist();
-      showToast('Odat o\'chirildi','BEKOR QILISH',()=>{state.data.checklist.items.push(copy);saveState();renderChecklist()});
+      confirmDialog(`"${it.name}" odatni o'chirasizmi?`,()=>{
+        const copy={...it};
+        state.data.checklist.items=state.data.checklist.items.filter(x=>x.id!==it.id);
+        saveState();closeSheet();openHabitSettings();renderChecklist();
+        showToast("Odat o'chirildi","BEKOR QILISH",()=>{state.data.checklist.items.push(copy);saveState();renderChecklist()});
+      });
     };
   });
-  content.querySelector('#hs-add').onclick=()=>{
-    const emoji=prompt('Emoji:','⭐');if(emoji===null)return;
-    const name=prompt('Odat nomi:');if(!name)return;
-    const it={id:uid(),emoji:emoji.trim()||'⭐',name:name.trim(),order:state.data.checklist.items.length};
-    state.data.checklist.items.push(it);saveState();closeSheet();openHabitSettings();renderChecklist();
-  };
+
+  // Add (yangi)
+  const addFn=()=>openHabitEditModal(null);
+  content.querySelector('#hs-add').onclick=addFn;
+  content.querySelector('#hs-add-top').onclick=addFn;
+}
+
+// Habit yaratish/tahrir modal
+function openHabitEditModal(existing){
+  const isEdit=!!existing;
+  const content=el(`<div>
+    <div class="modal-head">
+      <button class="icon-btn" id="he-cancel">${I.x}</button>
+      <span class="modal-title">${isEdit?"Tahrir":"Yangi odat"}</span>
+      <button class="btn btn-primary" id="he-save" style="min-height:34px;padding:5px 14px;font-size:13px;">Saqlash</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <label class="form-label">Emoji</label>
+        <input class="input" id="he-emoji" value="${esc(isEdit?existing.emoji:'⭐')}" maxlength="2" style="text-align:center;font-size:28px;width:80px;"/>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Misol: 🌅 📖 🧘 💊 💰 🏋️ 🎯 ✨</div>
+      </div>
+      <div class="form-section">
+        <label class="form-label">Odat nomi</label>
+        <input class="input" id="he-name" value="${esc(isEdit?existing.name:'')}" placeholder="Masalan: 30 min kitob o'qish"/>
+      </div>
+    </div>
+  </div>`);
+  openSheet(content);
+  const emEl=content.querySelector('#he-emoji');
+  const nmEl=content.querySelector('#he-name');
+  setTimeout(()=>nmEl.focus(),100);
+  content.querySelector('#he-cancel').onclick=closeSheet;
+  function save(){
+    const emoji=(emEl.value||'⭐').trim();
+    const name=(nmEl.value||'').trim();
+    if(!name){nmEl.focus();return}
+    if(isEdit){
+      const orig=state.data.checklist.items.find(x=>x.id===existing.id);
+      if(orig){orig.emoji=emoji;orig.name=name}
+    } else {
+      const it={id:uid(),emoji,name,order:state.data.checklist.items.length};
+      state.data.checklist.items.push(it);
+    }
+    saveState();closeSheet();
+    // Refresh habit settings sheet
+    setTimeout(()=>{ closeAllSheets(); openHabitSettings(); renderChecklist(); }, 50);
+  }
+  content.querySelector('#he-save').onclick=save;
+  nmEl.onkeydown=e=>{ if(e.key==='Enter')save(); };
 }
 
 // === KAYZEN ===
