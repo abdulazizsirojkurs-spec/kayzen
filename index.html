@@ -78,18 +78,19 @@ a{color:var(--accent);text-decoration:none}
 /* === BOTTOM NAV === */
 #bottombar{position:fixed;bottom:0;left:0;right:0;z-index:40;display:flex;justify-content:center;padding-bottom:var(--safe-bottom);pointer-events:none}
 .bottombar-inner{
-  width:100%;max-width:480px;display:grid;grid-template-columns:repeat(4,1fr);
+  width:100%;max-width:480px;display:grid;grid-template-columns:repeat(5,1fr);
   background:rgba(255,255,255,0.94);backdrop-filter:saturate(180%) blur(16px);
   -webkit-backdrop-filter:saturate(180%) blur(16px);
   border-top:1px solid var(--border);pointer-events:auto;
 }
 .tab{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;padding:10px 4px 12px;color:var(--text-muted);
-  font-size:11px;font-weight:500;transition:color 150ms ease-out;
+  gap:4px;padding:10px 2px 12px;color:var(--text-muted);
+  font-size:10.5px;font-weight:500;transition:color 150ms ease-out;
+  white-space:nowrap;overflow:hidden;
   min-height:60px;
 }
-.tab svg{width:24px;height:24px}
+.tab svg{width:22px;height:22px}
 .tab.active{color:var(--accent)}
 .tab:active{transform:scale(0.96)}
 
@@ -391,6 +392,41 @@ a{color:var(--accent);text-decoration:none}
 .toggle.on::after{transform:translateX(18px)}
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+
+/* === Sinxron holati nishoni === */
+.sync-badge{display:none;align-items:center;gap:5px;font-size:12px;margin-top:3px;font-weight:500}
+.sync-badge.show{display:flex}
+.sync-badge .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-badge.s-ok{color:var(--text-muted)} .sync-badge.s-ok .dot{background:var(--success)}
+.sync-badge.s-syncing{color:var(--text-muted)} .sync-badge.s-syncing .dot{background:var(--warning);animation:pulse 1s infinite}
+.sync-badge.s-error{color:var(--danger);font-weight:600} .sync-badge.s-error .dot{background:var(--danger)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* === Rejalar bo'limi === */
+.plan-switch{display:flex;gap:8px;margin-bottom:16px}
+.plan-switch button{flex:1;padding:10px;border:1px solid var(--border);background:var(--surface);
+  border-radius:10px;font-size:15px;font-weight:500;color:var(--text-muted);cursor:pointer}
+.plan-switch button.active{background:var(--text);color:#fff;border-color:var(--text)}
+.plan-period{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.plan-period .lbl{font-size:16px;font-weight:600}
+.plan-period .sub{font-size:13px;color:var(--text-muted);margin-top:2px}
+.plan-nav{display:flex;gap:6px}
+.plan-nav button{width:34px;height:34px;border:1px solid var(--border);background:var(--surface);
+  border-radius:8px;font-size:17px;line-height:1;color:var(--text-muted);cursor:pointer}
+.plan-progress{height:6px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin:10px 0 18px}
+.plan-progress > i{display:block;height:100%;background:var(--success);border-radius:999px;transition:width .3s}
+.goal-row{display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;margin-bottom:10px}
+.goal-check{width:24px;height:24px;border:2px solid var(--border);border-radius:7px;flex-shrink:0;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;background:var(--surface)}
+.goal-check.done{background:var(--success);border-color:var(--success);color:#fff}
+.goal-body{flex:1;min-width:0}
+.goal-title{font-size:16px;line-height:1.4;word-break:break-word}
+.goal-row.done .goal-title{text-decoration:line-through;color:var(--text-light)}
+.goal-note{font-size:13px;color:var(--text-muted);margin-top:4px;white-space:pre-wrap}
+.goal-del{background:none;border:none;color:var(--text-light);font-size:19px;cursor:pointer;padding:0 4px;line-height:1}
+.plan-review{margin-top:22px}
+.plan-review .form-label{margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -408,6 +444,7 @@ a{color:var(--accent);text-decoration:none}
       <div>
         <div class="topbar-title" id="page-title">Vazifalar</div>
         <div class="topbar-sub" id="page-sub"></div>
+        <div class="sync-badge" id="sync-badge"></div>
       </div>
       <div class="topbar-actions" id="page-actions"></div>
     </div>
@@ -416,6 +453,7 @@ a{color:var(--accent);text-decoration:none}
   <main id="main">
     <section id="view-tasks" class="view active"></section>
     <section id="view-checklist" class="view"></section>
+    <section id="view-plans" class="view"></section>
     <section id="view-kayzen" class="view"></section>
     <section id="view-stats" class="view"></section>
   </main>
@@ -433,6 +471,10 @@ a{color:var(--accent);text-decoration:none}
       <button class="tab" data-view="checklist" aria-label="Chek list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-6"/></svg>
         <span>Chek list</span>
+      </button>
+      <button class="tab" data-view="plans" aria-label="Rejalar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg>
+        <span>Rejalar</span>
       </button>
       <button class="tab" data-view="kayzen" aria-label="Kayzen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
@@ -536,6 +578,7 @@ function defaultData(){
       entries:{},
     },
     categories:[...DEFAULT_CATEGORIES],
+    plans:{weekly:{},monthly:{}},
     pomodoro:{workMin:25,shortBreakMin:5,longBreakMin:15,sessions:[]},
     settings:{theme:'light',notificationsEnabled:false,lastBackupAt:null,firstRunCompleted:false,iosInstallDismissed:false,notifBannerDismissed:false},
   };
@@ -548,6 +591,9 @@ function loadState(){
     const d=JSON.parse(raw);
     if(!d.version) d.version=1;
     if(!d.categories) d.categories=[...DEFAULT_CATEGORIES];
+    if(!d.plans) d.plans={weekly:{},monthly:{}};
+    if(!d.plans.weekly) d.plans.weekly={};
+    if(!d.plans.monthly) d.plans.monthly={};
     if(!d.pomodoro) d.pomodoro={workMin:25,shortBreakMin:5,longBreakMin:15,sessions:[]};
     if(!d.settings) d.settings={theme:'light',notificationsEnabled:false,lastBackupAt:null,firstRunCompleted:false,iosInstallDismissed:false,notifBannerDismissed:false};
     if(d.settings.iosInstallDismissed===undefined) d.settings.iosInstallDismissed=false;
@@ -570,6 +616,7 @@ function saveState(push = true){
 
 async function pushToCloud(){
   if(!AUTH_KEY) return;
+  setSyncStatus('syncing');
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/sync_data?on_conflict=sync_key`, {
       method: 'POST',
@@ -585,8 +632,19 @@ async function pushToCloud(){
         updated_at: new Date().toISOString()
       })
     });
-    if(!res.ok) console.error('Cloud Sync xatosi:', await res.text());
-  } catch(e){ console.error('Cloud ga ulanib bo`lmadi', e); }
+    if(!res.ok){
+      const t = await res.text();
+      console.error('Cloud Sync xatosi:', t);
+      setSyncStatus('error','Server rad etdi ('+res.status+')');
+      showToast("\u26a0\ufe0f Bulutga saqlanmadi - internetni tekshiring");
+    } else {
+      setSyncStatus('ok');
+    }
+  } catch(e){
+    console.error('Cloud ga ulanib bo`lmadi', e);
+    setSyncStatus('error','Ulanib bo\'lmadi');
+    showToast("\u26a0\ufe0f Bulutga ulanib bo'lmadi - ma'lumot faqat telefonda");
+  }
 }
 
 async function pullFromCloud(forceOverride = false){
@@ -616,6 +674,13 @@ async function pullFromCloud(forceOverride = false){
 }
 
 // Global state
+// Sinxron holati - foydalanuvchi ko'rishi uchun (ilgari xatolar jim yo'qolardi)
+let syncStatus={state:'idle',at:null,err:null};
+function setSyncStatus(st,err){
+  syncStatus={state:st,at:Date.now(),err:err||null};
+  try{ renderSyncBadge(); }catch(e){}
+}
+
 const state={
   data:loadState(),
   currentView:'tasks',
@@ -717,7 +782,7 @@ function switchView(view){
 }
 function updateTopbar(){
   const {currentView:v}=state;
-  const titles={tasks:'Vazifalar',checklist:'Chek list',kayzen:'Kayzen tahlili',stats:'Statistika'};
+  const titles={tasks:'Vazifalar',checklist:'Chek list',plans:'Rejalar',kayzen:'Kayzen tahlili',stats:'Statistika'};
   $('#page-title').textContent=titles[v]||v;
   const sub=$('#page-sub');
   if(v==='tasks'){sub.textContent=formatDateUz(new Date())}
@@ -749,6 +814,7 @@ function renderCurrentView(){
   const v=state.currentView;
   if(v==='tasks')renderTasks();
   else if(v==='checklist')renderChecklist();
+  else if(v==='plans')renderPlans();
   else if(v==='kayzen')renderKayzen();
   else if(v==='stats')renderStats();
 }
@@ -1422,6 +1488,192 @@ function openHabitEditModal(existing){
 }
 
 // === KAYZEN ===
+
+// ============================================================
+// === REJALAR (haftalik / oylik) ===
+// ============================================================
+
+// ISO hafta kaliti: "2026-W37"
+function weekKey(d){
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const day=t.getUTCDay()||7;              // dushanba=1 ... yakshanba=7
+  t.setUTCDate(t.getUTCDate()+4-day);       // shu haftaning payshanbasi
+  const y=t.getUTCFullYear();
+  const jan1=new Date(Date.UTC(y,0,1));
+  const wn=Math.ceil(((t-jan1)/86400000+1)/7);
+  return y+'-W'+String(wn).padStart(2,'0');
+}
+function monthKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+// Hafta kalitidan dushanba-yakshanba sanalarini olish
+function weekRange(wk){
+  const [y,w]=wk.split('-W').map(Number);
+  const jan4=new Date(Date.UTC(y,0,4));
+  const day=jan4.getUTCDay()||7;
+  const mon=new Date(jan4); mon.setUTCDate(jan4.getUTCDate()-day+1+(w-1)*7);
+  const sun=new Date(mon);  sun.setUTCDate(mon.getUTCDate()+6);
+  return [mon,sun];
+}
+const OYLAR=['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
+
+function planLabel(kind,key){
+  if(kind==='monthly'){
+    const [y,m]=key.split('-').map(Number);
+    return OYLAR[m-1]+' '+y;
+  }
+  const [mon,sun]=weekRange(key);
+  const f=(dt)=>dt.getUTCDate()+' '+OYLAR[dt.getUTCMonth()].slice(0,3).toLowerCase();
+  return f(mon)+' — '+f(sun);
+}
+function planShift(kind,key,delta){
+  if(kind==='monthly'){
+    const [y,m]=key.split('-').map(Number);
+    const d=new Date(y,m-1+delta,1); return monthKey(d);
+  }
+  const [mon]=weekRange(key);
+  const d=new Date(mon); d.setUTCDate(d.getUTCDate()+delta*7);
+  return weekKey(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+}
+function getPlan(kind,key){
+  const box=state.data.plans[kind];
+  if(!box[key]) box[key]={goals:[],review:''};
+  if(!box[key].goals) box[key].goals=[];
+  return box[key];
+}
+
+function renderPlans(){
+  const sec=$('#view-plans'); sec.innerHTML='';
+  if(!state.planKind) state.planKind='weekly';
+  if(!state.planKey){
+    state.planKey = state.planKind==='weekly' ? weekKey(new Date()) : monthKey(new Date());
+  }
+  const kind=state.planKind, key=state.planKey;
+  const plan=getPlan(kind,key);
+
+  // Haftalik / Oylik almashtirgich
+  const sw=el(`<div class="plan-switch">
+    <button data-k="weekly" class="${kind==='weekly'?'active':''}">Haftalik</button>
+    <button data-k="monthly" class="${kind==='monthly'?'active':''}">Oylik</button>
+  </div>`);
+  sw.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    state.planKind=b.dataset.k;
+    state.planKey = b.dataset.k==='weekly' ? weekKey(new Date()) : monthKey(new Date());
+    renderPlans();
+  });
+  sec.appendChild(sw);
+
+  // Davr navigatsiyasi
+  const isNow = key === (kind==='weekly'?weekKey(new Date()):monthKey(new Date()));
+  const nav=el(`<div class="plan-period">
+    <div>
+      <div class="lbl">${esc(planLabel(kind,key))}</div>
+      <div class="sub">${isNow ? (kind==='weekly'?'Shu hafta':'Shu oy') : ''}</div>
+    </div>
+    <div class="plan-nav">
+      <button data-d="-1" aria-label="Oldingi">‹</button>
+      <button data-d="1" aria-label="Keyingi">›</button>
+    </div>
+  </div>`);
+  nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    state.planKey=planShift(kind,key,Number(b.dataset.d)); renderPlans();
+  });
+  sec.appendChild(nav);
+
+  // Progress
+  const done=plan.goals.filter(g=>g.done).length;
+  const pct=plan.goals.length?Math.round(done/plan.goals.length*100):0;
+  sec.appendChild(el(`<div class="plan-progress"><i style="width:${pct}%"></i></div>`));
+
+  if(plan.goals.length===0){
+    sec.appendChild(el(`<div class="empty-state"><div class="emoji">🎯</div>
+      <div class="text">Bu ${kind==='weekly'?'hafta':'oy'}ga maqsad qo'yilmagan</div>
+      <div class="sub">Pastdagi + tugma orqali qo'shing</div></div>`));
+  }
+
+  plan.goals.forEach(g=>{
+    const row=el(`<div class="goal-row ${g.done?'done':''}">
+      <div class="goal-check ${g.done?'done':''}">${g.done?'✓':''}</div>
+      <div class="goal-body">
+        <div class="goal-title">${esc(g.title)}</div>
+        ${g.note?`<div class="goal-note">${esc(g.note)}</div>`:''}
+      </div>
+      <button class="goal-del" aria-label="O'chirish">×</button>
+    </div>`);
+    row.querySelector('.goal-check').onclick=()=>{
+      g.done=!g.done; g.doneAt=g.done?new Date().toISOString():null;
+      vibrate(); saveState(); renderPlans();
+    };
+    row.querySelector('.goal-title').onclick=()=>openGoalEdit(kind,key,g);
+    row.querySelector('.goal-del').onclick=()=>{
+      if(!confirm('Maqsadni o\'chirasizmi?')) return;
+      plan.goals=plan.goals.filter(x=>x.id!==g.id);
+      state.data.plans[kind][key].goals=plan.goals;
+      saveState(); renderPlans(); showToast('Maqsad o\'chirildi');
+    };
+    sec.appendChild(row);
+  });
+
+  // Yakuniy xulosa
+  const rev=el(`<div class="plan-review">
+    <div class="form-label">${kind==='weekly'?'Hafta':'Oy'} yakuni — nima bo'ldi, nima bo'lmadi?</div>
+    <textarea class="textarea" rows="4" placeholder="Qisqacha xulosa...">${esc(plan.review||'')}</textarea>
+    <div class="save-indicator">✓ Saqlandi</div>
+  </div>`);
+  const ta=rev.querySelector('textarea'), ind=rev.querySelector('.save-indicator');
+  let dbt=null;
+  ta.oninput=()=>{ clearTimeout(dbt); dbt=setTimeout(()=>{
+    getPlan(kind,key).review=ta.value; saveState();
+    ind.classList.add('show'); setTimeout(()=>ind.classList.remove('show'),2000);
+  },500); };
+  sec.appendChild(rev);
+}
+
+function openGoalEdit(kind,key,goal){
+  const isNew=!goal;
+  const g=goal||{id:uid(),title:'',note:'',done:false,createdAt:new Date().toISOString()};
+  const content=el(`<div>
+    <div class="modal-head">
+      <button class="icon-btn" id="gl-cancel">${I.x}</button>
+      <span class="modal-title">${isNew?"Yangi maqsad":"Maqsadni tahrirlash"}</span>
+      <button class="btn btn-primary" id="gl-save" style="min-height:34px;padding:5px 14px;font-size:13px;">Saqlash</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <label class="form-label">${kind==='weekly'?'Haftalik':'Oylik'} maqsad</label>
+        <input class="input" id="gl-title" value="${esc(g.title)}" placeholder="Masalan: Instagram faolligini tiklash"/>
+      </div>
+      <div class="form-section">
+        <label class="form-label">Izoh (ixtiyoriy)</label>
+        <textarea class="textarea" id="gl-note" rows="3" placeholder="Qanday o'lchanadi? Nima qilinadi?">${esc(g.note||'')}</textarea>
+      </div>
+    </div>
+  </div>`);
+  openSheet(content);
+  const tEl=content.querySelector('#gl-title');
+  setTimeout(()=>tEl.focus(),100);
+  content.querySelector('#gl-cancel').onclick=closeSheet;
+  content.querySelector('#gl-save').onclick=()=>{
+    const t=tEl.value.trim();
+    if(!t){ showToast("Maqsad nomini yozing"); return; }
+    g.title=t; g.note=content.querySelector('#gl-note').value.trim();
+    const plan=getPlan(kind,key);
+    if(isNew) plan.goals.push(g);
+    saveState(); closeSheet(); renderPlans();
+    showToast(isNew?"Maqsad qo'shildi":"Saqlandi");
+  };
+}
+
+// === SINXRON NISHONI ===
+function renderSyncBadge(){
+  const b=document.getElementById('sync-badge'); if(!b) return;
+  const {state:st,at,err}=syncStatus;
+  if(st==='idle'){ b.className='sync-badge'; b.innerHTML=''; return; }
+  const t=at?new Date(at).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'}):'';
+  if(st==='syncing'){ b.className='sync-badge show s-syncing'; b.innerHTML='<span class="dot"></span>Saqlanmoqda…'; }
+  else if(st==='ok'){ b.className='sync-badge show s-ok'; b.innerHTML=`<span class="dot"></span>Bulutga saqlandi ${t}`; }
+  else { b.className='sync-badge show s-error'; b.innerHTML=`<span class="dot"></span>Saqlanmadi${err?' — '+esc(err):''}`; }
+}
+
 function renderKayzen(){
   const sec=$('#view-kayzen');sec.innerHTML='';
   const d=state.data;const dt=state.kayzenDate;
@@ -1950,6 +2202,7 @@ function initApp() {
   $('#fab').onclick=()=>{
     const v=state.currentView;
     if(v==='tasks')openAddTask();
+    else if(v==='plans')openGoalEdit(state.planKind||'weekly', state.planKey||weekKey(new Date()), null);
     else if(v==='checklist')openHabitSettings();
     else if(v==='kayzen'){}
   };
