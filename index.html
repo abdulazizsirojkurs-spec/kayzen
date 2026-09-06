@@ -427,6 +427,67 @@ a{color:var(--accent);text-decoration:none}
 .goal-del{background:none;border:none;color:var(--text-light);font-size:19px;cursor:pointer;padding:0 4px;line-height:1}
 .plan-review{margin-top:22px}
 .plan-review .form-label{margin-bottom:6px}
+
+/* === MIT bloki (bosh ekran) === */
+.mit-block{background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border:1px solid #BFDBFE;
+  border-radius:16px;padding:16px;margin-bottom:16px}
+.mit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mit-title{font-size:15px;font-weight:700;color:#1E3A8A;letter-spacing:-.01em}
+.mit-count{font-size:13px;font-weight:600;color:#1D4ED8;background:#fff;padding:3px 10px;border-radius:999px}
+.mit-slots{display:flex;flex-direction:column;gap:8px}
+.mit-slot{display:flex;align-items:center;gap:11px;background:#fff;border-radius:11px;padding:12px 13px;
+  border:1px solid #DBEAFE;min-height:50px}
+.mit-slot.empty{border:1.5px dashed #93C5FD;background:rgba(255,255,255,.55);color:#3B82F6;
+  font-size:14px;cursor:pointer;justify-content:center;font-weight:500}
+.mit-slot.empty:active{background:#fff}
+.mit-check{width:24px;height:24px;border:2px solid #BFDBFE;border-radius:7px;flex-shrink:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:700}
+.mit-slot.done .mit-check{background:var(--success);border-color:var(--success)}
+.mit-text{flex:1;font-size:15px;line-height:1.35;cursor:pointer;word-break:break-word}
+.mit-slot.done .mit-text{text-decoration:line-through;color:var(--text-light)}
+.mit-x{background:none;border:none;color:#93C5FD;font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+.mit-hint{font-size:12px;color:#3B82F6;margin-top:10px;line-height:1.4}
+
+/* === Odat guruhlari === */
+.habit-group-head{display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--text-muted);
+  margin:18px 2px 8px}
+.habit-group-head.bonus{color:var(--text-light)}
+.hg-count{font-weight:600;letter-spacing:0}
+.habit-streak{font-size:12px;color:var(--warning);font-weight:600;margin-left:4px}
+.habit-warn{font-size:11px;color:var(--danger);font-weight:600;margin-left:4px;
+  background:var(--danger-soft);padding:1px 7px;border-radius:999px}
+
+/* === Asosiy odat tanlash === */
+.core-setup{background:var(--accent-soft);border:1px solid #BFDBFE;border-radius:14px;padding:16px;margin-bottom:16px}
+.cs-title{font-size:15px;font-weight:700;color:#1E3A8A;margin-bottom:6px}
+.cs-text{font-size:13.5px;color:var(--text-muted);line-height:1.55;margin-bottom:12px}
+.cp-row{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--border);
+  border-radius:11px;margin-bottom:8px;cursor:pointer;background:var(--surface)}
+.cp-row.on{border-color:var(--accent);background:var(--accent-soft)}
+.cp-name{flex:1;font-size:15px}
+.cp-box{width:26px;height:26px;border:2px solid var(--border);border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700}
+.cp-row.on .cp-box{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* === Kayzen === */
+.kayzen-weekly-note{background:var(--purple-soft);color:#5B21B6;border-radius:11px;padding:11px 14px;
+  font-size:13px;margin-bottom:14px;font-weight:500}
+.q-weekly{font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--purple);
+  background:var(--purple-soft);padding:2px 7px;border-radius:999px;vertical-align:middle}
+
+/* === Fokus metrikasi === */
+.focus-metric{display:flex;align-items:center;gap:13px;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:13px 15px;margin-bottom:14px}
+.focus-metric.low{border-color:#FCD34D;background:#FFFBEB}
+.fm-num{font-size:21px;font-weight:800;color:var(--text);flex-shrink:0}
+.fm-text{font-size:13px;color:var(--text-muted);line-height:1.5}
+.fm-warn{color:#B45309;font-weight:600}
+.goal-link{font-size:12px;color:var(--accent);margin-top:5px;font-weight:500}
+.hint-sm{font-size:12px;color:var(--text-muted);line-height:1.45;margin:-2px 0 4px}
+
+.habit-paused{font-size:11px;color:var(--text-light);font-weight:500;margin-left:4px;
+  background:var(--surface-2);padding:1px 7px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -549,12 +610,16 @@ const DEFAULT_HABITS = [
   {emoji:'🍱',name:'Ertangi ovqatlarni tayyorlattim'},
 ];
 const DEFAULT_QUESTIONS = [
-  "Kecha samaradorliging qanday bo'ldi?",
-  "G'alabalar kundaligi — kechagi g'alabalaringni yozing",
-  "Eng katta xavf nima va qanday oldini olaman?",
-  "Arzon va sifatli dofamin holati qanday?",
-  "Qanday qilib daromadni oshirish mumkin?",
-  "Qanday qarzdan tezroq chiqaman?",
+  // Kunlik - yengil, 1-2 daqiqalik. Og'ir strategik savollar haftalikka ko'chirildi:
+  // har kuni qarz/xavf haqida o'ylash refleksiya emas, tashvish sikli hosil qiladi.
+  {text:"Bugun eng muhim 1 ta ish nima?", freq:'daily'},
+  {text:"Kechagi 1 ta g'alabang nima edi?", freq:'daily'},
+  {text:"Bugun nima to'sqinlik qilishi mumkin va qanday oldini olaman?", freq:'daily'},
+  // Haftalik - yakshanba kuni, chuqur strategik
+  {text:"Bu hafta eng katta xavf nima va qanday oldini olaman?", freq:'weekly'},
+  {text:"Qanday qilib daromadni oshirish mumkin?", freq:'weekly'},
+  {text:"Qarzdan chiqish bo'yicha shu hafta qanday qadam tashladim?", freq:'weekly'},
+  {text:"Arzon va sifatli dofamin holati qanday?", freq:'weekly'},
 ];
 const DEFAULT_CATEGORIES = ['Marketing','Shaxsiy','Sport','Moliya','AI'];
 
@@ -570,11 +635,11 @@ function defaultData(){
     version:APP_VERSION,
     tasks:[],
     checklist:{
-      items:DEFAULT_HABITS.map((h,i)=>({id:uid(),emoji:h.emoji,name:h.name,order:i})),
+      items:DEFAULT_HABITS.map((h,i)=>({id:uid(),emoji:h.emoji,name:h.name,order:i,core:i<3})),
       days:{},
     },
     kayzen:{
-      questions:DEFAULT_QUESTIONS.map((t,i)=>({id:uid(),text:t,order:i})),
+      questions:DEFAULT_QUESTIONS.map((q,i)=>({id:uid(),text:q.text||q,order:i,freq:q.freq||'daily'})),
       entries:{},
     },
     categories:[...DEFAULT_CATEGORIES],
@@ -592,6 +657,25 @@ function loadState(){
     if(!d.version) d.version=1;
     if(!d.categories) d.categories=[...DEFAULT_CATEGORIES];
     if(!d.plans) d.plans={weekly:{},monthly:{}};
+    // Odat: 'core' (asosiy/bonus). Eski ma'lumotda yo'q - hech biri asosiy emas,
+    // foydalanuvchi o'zi tanlaydi (chek list ustida taklif kartasi chiqadi).
+    (d.checklist?.items||[]).forEach(it=>{ if(it.core===undefined) it.core=false; });
+    // Kayzen savoli: 'freq'. Eskilarida yo'q - hammasi kunlik deb qabul qilinadi,
+    // lekin og'ir strategik savollar avtomatik haftalikka o'tkaziladi.
+    const WEEKLY_HINTS=['xavf','daromadni oshirish','qarzdan','dofamin'];
+    (d.kayzen?.questions||[]).forEach(q=>{
+      if(q.freq===undefined){
+        const t=(q.text||'').toLowerCase();
+        q.freq = WEEKLY_HINTS.some(h=>t.includes(h)) ? 'weekly' : 'daily';
+      }
+    });
+    // Vazifa: takrorlanish, shoshilinchlik, maqsadga bog'lanish
+    (d.tasks||[]).forEach(t=>{
+      if(t.repeat===undefined) t.repeat=null;
+      if(t.repeatGroupId===undefined) t.repeatGroupId=null;
+      if(t.urgent===undefined) t.urgent=false;
+      if(t.goalId===undefined) t.goalId=null;
+    });
     if(!d.plans.weekly) d.plans.weekly={};
     if(!d.plans.monthly) d.plans.monthly={};
     if(!d.pomodoro) d.pomodoro={workMin:25,shortBreakMin:5,longBreakMin:15,sessions:[]};
@@ -831,6 +915,13 @@ function getFilteredTasks(){
     // "Bajarilgan" filter — barcha bajarilgan vazifalar (har kungi)
     if(time==='done'){return !!t.completed}
 
+    // Eyzenxauer 2-kvadrant: muhim, lekin shoshilinch emas.
+    // Strategik ish shu yerda yashaydi va aynan shu doim kechikadi.
+    if(status==='q2'){
+      if(t.completed) return false;
+      return t.status==='important' && !t.urgent;
+    }
+
     // Bajarilgan vazifa: faqat BUGUN bajarilgan bo'lsa "Bugun" filterda ko'rinadi.
     // Boshqa filterlarda (Ertaga, Hafta, Barchasi) bajarilganlar ko'rinmaydi.
     if(t.completed){
@@ -873,7 +964,11 @@ function renderTasks(){
   const sec=$('#view-tasks');sec.innerHTML='';
   const d=state.data;
 
-  // Pomodoro inline (Always visible as requested)
+  // === BUGUNGI 3 TA ASOSIY ISH (MIT) — ekranning eng tepasi ===
+  // Ilgari kontekst menyuda yashiringan edi: 45 kunda 0 marta ishlatilgan.
+  sec.appendChild(buildMITBlock());
+
+  // Pomodoro inline
   if(!state.pomo) initPomo();
   renderPomoInline(sec);
 
@@ -908,7 +1003,7 @@ function renderTasks(){
   sec.appendChild(chipRow);
 
   // Status filter chips
-  const statFilters=[{k:'all',l:'Hammasi'},{k:'important',l:'🚩 Muhim'},{k:'todo',l:'✓ Oddiy vazifa'},{k:'delegated',l:'👥 Topshirildi'}];
+  const statFilters=[{k:'all',l:'Hammasi'},{k:'q2',l:'🎯 Strategik'},{k:'important',l:'🚩 Muhim'},{k:'todo',l:'✓ Oddiy vazifa'},{k:'delegated',l:'👥 Topshirildi'}];
   const chipRow2=el(`<div class="chip-row" id="status-chips"></div>`);
   statFilters.forEach(f=>{
     const c=el(`<button class="chip${state.taskFilter.status===f.k?' active':''}">${f.l}</button>`);
@@ -923,6 +1018,80 @@ function renderTasks(){
   } else {
     filtered.forEach(t=>sec.appendChild(buildTaskWrap(t)));
   }
+}
+
+function buildMITBlock(){
+  const tk=todayKey();
+  const mits=state.data.tasks.filter(t=>t.isMIT&&t.mitDate===tk&&!t.archived);
+  const doneN=mits.filter(t=>t.completed).length;
+  const wrap=el(`<div class="mit-block">
+    <div class="mit-head">
+      <div class="mit-title">Bugungi 3 ta asosiy ish</div>
+      <div class="mit-count">${doneN}/${mits.length||3}</div>
+    </div>
+    <div class="mit-slots"></div>
+    <div class="mit-hint">Kun oxirida shu 3 tasi bajarilgan bo'lsa — kun muvaffaqiyatli.</div>
+  </div>`);
+  const slots=wrap.querySelector('.mit-slots');
+
+  mits.forEach(t=>{
+    const row=el(`<div class="mit-slot filled${t.completed?' done':''}">
+      <div class="mit-check">${t.completed?'✓':''}</div>
+      <div class="mit-text">${esc(t.title)}</div>
+      <button class="mit-x" aria-label="Olib tashlash">×</button>
+    </div>`);
+    row.querySelector('.mit-check').onclick=(e)=>{e.stopPropagation();toggleTaskComplete(t.id)};
+    row.querySelector('.mit-text').onclick=()=>openTaskDetail(t.id);
+    row.querySelector('.mit-x').onclick=(e)=>{
+      e.stopPropagation(); t.isMIT=false; t.mitDate=null; saveState(); renderTasks();
+    };
+    slots.appendChild(row);
+  });
+
+  for(let i=mits.length;i<3;i++){
+    const empty=el(`<div class="mit-slot empty"><span>+ ${i+1}-asosiy ishni tanlash</span></div>`);
+    empty.onclick=()=>openMITPicker();
+    slots.appendChild(empty);
+  }
+  return wrap;
+}
+
+// MIT uchun vazifa tanlash
+function openMITPicker(){
+  const tk=todayKey();
+  const cand=state.data.tasks.filter(t=>!t.archived&&!t.completed&&!(t.isMIT&&t.mitDate===tk));
+  const content=el(`<div>
+    <div class="modal-head">
+      <button class="icon-btn" id="mp-close">${I.x}</button>
+      <span class="modal-title">Asosiy ishni tanlash</span>
+      <span style="width:34px"></span>
+    </div>
+    <div class="modal-body">
+      <div class="cs-text" style="margin-bottom:12px">
+        Bugun <b>albatta</b> bajarilishi kerak bo'lgan ishni tanlang.
+        Ko'p emas — 3 tagacha. Qolgani bugun bo'lmasa ham dunyo qulamaydi.
+      </div>
+      <div id="mp-list"></div>
+      <button class="btn btn-secondary btn-block" id="mp-new" style="margin-top:12px">+ Yangi vazifa yozish</button>
+    </div>
+  </div>`);
+  const list=content.querySelector('#mp-list');
+  if(cand.length===0){
+    list.appendChild(el(`<div class="empty-state"><div class="emoji">📝</div><div class="text">Tanlash uchun vazifa yo'q</div></div>`));
+  }
+  cand.slice(0,40).forEach(t=>{
+    const r=el(`<div class="cp-row"><div class="cp-name">${esc(t.title)}</div><div class="cp-box">+</div></div>`);
+    r.onclick=()=>{
+      const n=state.data.tasks.filter(x=>x.isMIT&&x.mitDate===tk).length;
+      if(n>=3){ showToast('3 tadan ko\'p bo\'lmasin — fokus yo\'qoladi'); return; }
+      t.isMIT=true; t.mitDate=tk; saveState(); closeSheet(); renderTasks();
+      showToast('Asosiy ishga qo\'shildi');
+    };
+    list.appendChild(r);
+  });
+  openSheet(content,{full:true});
+  content.querySelector('#mp-close').onclick=closeSheet;
+  content.querySelector('#mp-new').onclick=()=>{ closeSheet(); openAddTask(true); };
 }
 
 function buildTaskWrap(task){
@@ -1002,7 +1171,31 @@ function toggleTaskComplete(id){
   vibrate(8);
   const t=state.data.tasks.find(x=>x.id===id);if(!t)return;
   t.completed=!t.completed;t.completedAt=t.completed?new Date().toISOString():null;
+  if(t.completed && t.repeat) spawnNextRepeat(t);
   saveState();renderTasks();
+}
+
+// Takrorlanuvchi vazifa bajarilganda - keyingi nusxasini yaratamiz.
+// Tarix saqlanadi (eskisi bajarilgan holida qoladi), yangisi keyingi sanaga tayyor turadi.
+function spawnNextRepeat(t){
+  const step={daily:1,weekly:7,monthly:30}[t.repeat];
+  if(!step) return;
+  const gid=t.repeatGroupId||uid();
+  t.repeatGroupId=gid;
+  const base=t.deadline?parseKey(t.deadline.slice(0,10)):new Date();
+  const nd=addDays(base,step); nd.setHours(23,59,0,0);
+  const nextKey=dateKey(nd);
+  // Bu guruhda shu sanaga allaqachon nusxa bo'lsa - qayta yaratmaymiz
+  const exists=state.data.tasks.some(x=>x.repeatGroupId===gid&&!x.completed&&!x.archived
+    &&x.deadline&&x.deadline.slice(0,10)===nextKey);
+  if(exists) return;
+  state.data.tasks.unshift({
+    ...t, id:uid(), completed:false, completedAt:null, isMIT:false, mitDate:null,
+    createdAt:new Date().toISOString(), deadline:nd.toISOString().slice(0,16),
+    repeatGroupId:gid, pomodoroCount:0,
+    subtasks:(t.subtasks||[]).map(sb=>({...sb,id:uid(),done:false})),
+  });
+  showToast(`Keyingi takror ${formatDateShort(nd)} ga qo'yildi`);
 }
 function toggleSubtask(taskId,subId){
   vibrate(8);
@@ -1044,7 +1237,7 @@ function openContextMenu(id,anchor){
   };
 }
 
-function openAddTask(){
+function openAddTask(asMIT){
   const content=el(`<div>
     <div class="handle-bar" style="margin-bottom:0"></div>
     <div class="modal-head"><span class="modal-title">Yangi vazifa</span><button class="icon-btn" id="add-close">${I.x}</button></div>
@@ -1064,6 +1257,23 @@ function openAddTask(){
         <button class="chip" id="dl-week">Bu hafta</button>
         <button class="chip" id="dl-none">Yo'q</button>
       </div>
+
+      <div class="form-label">Shoshilinchmi?</div>
+      <div class="chip-row" style="padding:0 0 4px">
+        <button class="chip" id="ur-yes">🔥 Ha, shoshilinch</button>
+        <button class="chip active" id="ur-no">Yo'q, kutadi</button>
+      </div>
+      <div class="hint-sm">Muhim + shoshilinch emas = strategik ish. Aynan shu doim kechikadi.</div>
+
+      <div class="form-label" style="margin-top:12px">Takrorlanadimi?</div>
+      <div class="chip-row" style="padding:0 0 8px">
+        <button class="chip active" data-rep="">Bir marta</button>
+        <button class="chip" data-rep="daily">Har kuni</button>
+        <button class="chip" data-rep="weekly">Har hafta</button>
+        <button class="chip" data-rep="monthly">Har oy</button>
+      </div>
+
+      <div id="goal-pick-wrap"></div>
     </div>
     <div class="modal-foot"><button class="btn btn-primary btn-block" id="add-save">Yaratish</button></div>
   </div>`);
@@ -1071,7 +1281,35 @@ function openAddTask(){
   content.querySelector('#add-close').onclick=closeSheet;
   const titleIn=content.querySelector('#new-task-title');
   setTimeout(()=>titleIn.focus(),300);
-  let selStatus='todo';let selDeadline=null;
+  let selStatus='todo';let selDeadline=null;let selUrgent=false;let selRepeat='';let selGoalId=null;
+
+  // Shoshilinchlik
+  const urY=content.querySelector('#ur-yes'), urN=content.querySelector('#ur-no');
+  urY.onclick=()=>{selUrgent=true;urY.classList.add('active');urN.classList.remove('active')};
+  urN.onclick=()=>{selUrgent=false;urN.classList.add('active');urY.classList.remove('active')};
+
+  // Takrorlanish
+  content.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{
+    content.querySelectorAll('[data-rep]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); selRepeat=b.dataset.rep;
+  });
+
+  // Haftalik maqsadga bog'lash
+  const gw=content.querySelector('#goal-pick-wrap');
+  const wk=weekKey(new Date());
+  const goals=(state.data.plans?.weekly?.[wk]?.goals)||[];
+  if(goals.length){
+    gw.innerHTML=`<div class="form-label">Qaysi haftalik maqsadga xizmat qiladi?</div><div class="chip-row" id="goal-chips" style="padding:0 0 4px"></div>`;
+    const gc=gw.querySelector('#goal-chips');
+    const none=el(`<button class="chip active">Bog'liq emas</button>`);
+    none.onclick=()=>{selGoalId=null;gc.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));none.classList.add('active')};
+    gc.appendChild(none);
+    goals.forEach(g=>{
+      const c=el(`<button class="chip">${esc(g.title.slice(0,26))}</button>`);
+      c.onclick=()=>{selGoalId=g.id;gc.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active')};
+      gc.appendChild(c);
+    });
+  }
   content.querySelectorAll('.status-opt').forEach(btn=>{
     btn.onclick=()=>{content.querySelectorAll('.status-opt').forEach(b=>b.className=`status-opt ${b.dataset.status}`);btn.classList.add('active');selStatus=btn.dataset.status};
   });
@@ -1089,7 +1327,11 @@ function openAddTask(){
     const title=titleIn.value.trim();if(!title)return titleIn.focus();
     const subText=content.querySelector('#new-task-subtasks').value.trim();
     const subtasks=subText?subText.split('\n').filter(s=>s.trim()).map(s=>({id:uid(),title:s.trim(),done:false})):[];
-    const task={id:uid(),title,status:selStatus,completed:false,category:'',deadline:selDeadline,notes:'',subtasks,isMIT:false,mitDate:null,createdAt:new Date().toISOString(),completedAt:null,pomodoroCount:0,archived:false};
+    const task={id:uid(),title,status:selStatus,completed:false,category:'',deadline:selDeadline,notes:'',subtasks,isMIT:false,mitDate:null,createdAt:new Date().toISOString(),completedAt:null,pomodoroCount:0,archived:false,repeat:selRepeat||null,repeatGroupId:selRepeat?uid():null,urgent:selUrgent||false,goalId:selGoalId||null};
+    if(asMIT){
+      const n=state.data.tasks.filter(x=>x.isMIT&&x.mitDate===todayKey()).length;
+      if(n<3){ task.isMIT=true; task.mitDate=todayKey(); }
+    }
     state.data.tasks.unshift(task);saveState();closeSheet();renderTasks();vibrate(8);
     const copy={...task};showToast('Vazifa qo\'shildi','BEKOR QILISH',()=>{state.data.tasks=state.data.tasks.filter(x=>x.id!==task.id);saveState();renderTasks()});
   };
@@ -1235,9 +1477,14 @@ function renderChecklist(){
   const d=state.data;const dt=state.currentDate;
   const dayData=d.checklist.days[dt]||{};
   const items=[...d.checklist.items].sort((a,b)=>a.order-b.order);
-  const total=items.length;const done=items.filter(it=>dayData[it.id]).length;
+  const core=items.filter(i=>i.core);
+  // Halqa endi ASOSIY odatlarni ko'rsatadi (asosiy yo'q bo'lsa - hammasini)
+  const ringItems = core.length ? core : items;
+  const total=ringItems.length;
+  const done=ringItems.filter(it=>dayData[it.id]).length;
   const pct=total?Math.round(done/total*100):0;
   const streak=calcStreak();
+  const ringLabel = core.length ? 'asosiy bajarildi' : 'bajarildi';
 
   // Date navigator
   sec.appendChild(buildDateNav(state.currentDate,(nk)=>{state.currentDate=nk;renderChecklist()}));
@@ -1258,7 +1505,7 @@ function renderChecklist(){
         </div>
         <div class="progress-right">
           <div class="big">${done}/${total}</div>
-          <div class="small">bajarildi</div>
+          <div class="small">${ringLabel}</div>
         </div>
       </div>
     </div>
@@ -1274,21 +1521,102 @@ function renderChecklist(){
   if(items.length===0){
     sec.appendChild(el(`<div class="empty-state"><div class="emoji">✅</div><div class="text">Odatlar yo'q. Sozlamalarga kiring.</div></div>`));
   } else {
-    items.forEach(it=>{
+    const core=items.filter(i=>i.core), bonus=items.filter(i=>!i.core);
+
+    // Asosiy odat tanlanmagan bo'lsa - yo'naltiruvchi karta.
+    // Bularsiz streak ishlamaydi, shuning uchun bu eng muhim qadam.
+    if(core.length===0){
+      const setup=el(`<div class="core-setup">
+        <div class="cs-title">Asosiy odatlaringizni tanlang</div>
+        <div class="cs-text">Kun <b>muvaffaqiyatli</b> hisoblanishi uchun yetarli bo'lgan 1-3 ta odat.
+        Qolganlari bonus bo'lib qoladi — ular ham foydali, lekin kun ularsiz ham muvaffaqiyatli.</div>
+        <button class="btn btn-primary btn-block" id="cs-go">Asosiylarni tanlash</button>
+      </div>`);
+      setup.querySelector('#cs-go').onclick=()=>openCorePicker();
+      sec.appendChild(setup);
+    }
+
+    const renderRow=(it)=>{
       const isDone=!!dayData[it.id];
       const spark=buildSpark(it.id,dt);
+      const st=habitStreak(it.id);
+      const miss=habitMissStreak(it.id);
+      // "Never miss twice": 2+ kun tushib qolsa - ogohlantirish
+      // 2 kundan boshlab ogohlantiramiz ("never miss twice"), 7 kundan keyin
+      // ogohlantirish emas - bu odat uzilgan, uni qaytadan boshlash kerak
+      const warn = (!isDone && miss>=2 && miss<=7)
+        ? `<span class="habit-warn">${miss} kun yo'q</span>`
+        : (!isDone && miss>7 ? `<span class="habit-paused">uzilgan</span>` : '');
+      const streakTag = st>=2 ? `<span class="habit-streak">🔥 ${st}</span>` : '';
       const row=el(`<div class="habit-row${isDone?' done':''}" role="button" tabindex="0" aria-label="${esc(it.name)}">
         <div class="habit-emoji">${it.emoji}</div>
         <div class="habit-info">
-          <div class="habit-name">${esc(it.name)}</div>
+          <div class="habit-name">${esc(it.name)} ${streakTag} ${warn}</div>
           <div class="habit-spark">${spark}</div>
         </div>
         <div class="habit-check">${I.check}</div>
       </div>`);
       row.onclick=()=>toggleHabit(it.id);
-      sec.appendChild(row);
-    });
+      return row;
+    };
+
+    if(core.length){
+      const doneCore=core.filter(i=>dayData[i.id]).length;
+      sec.appendChild(el(`<div class="habit-group-head">
+        <span>ASOSIY</span><span class="hg-count">${doneCore}/${core.length}</span>
+      </div>`));
+      core.forEach(it=>sec.appendChild(renderRow(it)));
+    }
+    if(bonus.length){
+      const doneB=bonus.filter(i=>dayData[i.id]).length;
+      sec.appendChild(el(`<div class="habit-group-head bonus">
+        <span>BONUS</span><span class="hg-count">${doneB}/${bonus.length}</span>
+      </div>`));
+      bonus.forEach(it=>sec.appendChild(renderRow(it)));
+    }
   }
+}
+
+// Asosiy odatlarni tanlash oynasi
+function openCorePicker(){
+  const items=[...state.data.checklist.items].sort((a,b)=>a.order-b.order);
+  const content=el(`<div>
+    <div class="modal-head">
+      <button class="icon-btn" id="cp-close">${I.x}</button>
+      <span class="modal-title">Asosiy odatlar</span>
+      <button class="btn btn-primary" id="cp-save" style="min-height:34px;padding:5px 14px;font-size:13px;">Saqlash</button>
+    </div>
+    <div class="modal-body">
+      <div class="cs-text" style="margin-bottom:14px">
+        Eng ko'pi <b>3 ta</b> tanlang. Maslahat: eng ko'p <b>natija keltiradigan</b> odatni tanlang,
+        eng osonini emas. Kun shu odatlar bajarilsa muvaffaqiyatli hisoblanadi.
+      </div>
+      <div id="cp-list"></div>
+    </div>
+  </div>`);
+  const list=content.querySelector('#cp-list');
+  const sel=new Set(items.filter(i=>i.core).map(i=>i.id));
+  items.forEach(it=>{
+    const r=el(`<div class="cp-row${sel.has(it.id)?' on':''}">
+      <div class="habit-emoji">${it.emoji}</div>
+      <div class="cp-name">${esc(it.name)}</div>
+      <div class="cp-box">${sel.has(it.id)?'✓':''}</div>
+    </div>`);
+    r.onclick=()=>{
+      if(sel.has(it.id)) sel.delete(it.id);
+      else { if(sel.size>=3){ showToast("Eng ko'pi 3 ta — kamroq bo'lgani yaxshiroq"); return; } sel.add(it.id); }
+      r.classList.toggle('on',sel.has(it.id));
+      r.querySelector('.cp-box').textContent=sel.has(it.id)?'✓':'';
+    };
+    list.appendChild(r);
+  });
+  openSheet(content,{full:true});
+  content.querySelector('#cp-close').onclick=closeSheet;
+  content.querySelector('#cp-save').onclick=()=>{
+    state.data.checklist.items.forEach(it=>it.core=sel.has(it.id));
+    saveState(); closeSheet(); renderChecklist();
+    showToast(sel.size?`${sel.size} ta asosiy odat belgilandi`:'Asosiy odat tanlanmadi');
+  };
 }
 
 function buildSpark(itemId,refDate){
@@ -1310,26 +1638,66 @@ function toggleHabit(itemId){
   const prev=!!state.data.checklist.days[dt][itemId];
   state.data.checklist.days[dt][itemId]=!prev;
   saveState();
-  // Check confetti
-  const items=state.data.checklist.items;
-  const dayData=state.data.checklist.days[dt]||{};
-  const allDone=items.every(it=>dayData[it.id]);
-  if(allDone&&!prev)launchConfetti();
+  // Konfetti: ASOSIY odatlar to'lganda. Ilgari 22 tadan 22 tasi talab qilinardi -
+  // shu sabab 45 kun davomida birorta marta ham otilmagan.
+  const core=coreItems();
+  if(core.length && !prev && isDaySuccess(dt)){
+    launchConfetti();
+    const st=calcStreak();
+    showToast(st>1?`Kun yopildi! 🔥 ${st} kun ketma-ket`:'Kun yopildi! 🎉');
+  }
   renderChecklist();
 }
 
+function coreItems(){ return (state.data.checklist.items||[]).filter(i=>i.core); }
+
+// Kun "muvaffaqiyatli" - faqat ASOSIY odatlar bajarilsa.
+// Ilgari BARCHA 22 odat talab qilinardi - shu sabab streak hech qachon boshlanmagan.
+function isDaySuccess(k){
+  const core=coreItems(); if(core.length===0) return false;
+  const day=state.data.checklist.days[k]||{};
+  return core.every(it=>day[it.id]);
+}
+
 function calcStreak(){
-  let streak=0;let d=new Date();let limit=0;
+  if(coreItems().length===0) return 0;
+  let streak=0, d=new Date(), limit=0;
+  // Bugun hali bajarilmagan bo'lsa, kechadan boshlab sanaymiz (kun hali tugamagan)
+  if(!isDaySuccess(dateKey(d))) d.setDate(d.getDate()-1);
   while(limit<365){
     limit++;
-    const k=dateKey(d);const dayData=state.data.checklist.days[k]||{};
-    const items=state.data.checklist.items;
-    if(items.length===0)break;
-    const allDone=items.every(it=>dayData[it.id]);
-    if(!allDone)break;
-    streak++;d.setDate(d.getDate()-1);
+    if(!isDaySuccess(dateKey(d))) break;
+    streak++; d.setDate(d.getDate()-1);
   }
   return streak;
+}
+
+// Bitta odat uchun alohida streak (Duolingo mexanikasi)
+function habitStreak(itemId){
+  let n=0, d=new Date(), limit=0;
+  const days=state.data.checklist.days;
+  if(!(days[dateKey(d)]||{})[itemId]) d.setDate(d.getDate()-1);
+  while(limit<365){
+    limit++;
+    if(!(days[dateKey(d)]||{})[itemId]) break;
+    n++; d.setDate(d.getDate()-1);
+  }
+  return n;
+}
+
+// "Never miss twice" - ketma-ket necha kun tushib qolgan (bugundan oldin).
+// Muhim: hech qachon bajarilmagan (yangi) odat uchun 0 qaytaradi -
+// aks holda yangi odat birinchi kunidayoq "30 kun tushdi" deb ayblanardi.
+function habitMissStreak(itemId){
+  const days=state.data.checklist.days;
+  const everDone=Object.values(days).some(dd=>dd&&dd[itemId]);
+  if(!everDone) return 0;
+  let n=0, d=new Date(); d.setDate(d.getDate()-1);
+  while(n<14){
+    if((days[dateKey(d)]||{})[itemId]) break;
+    n++; d.setDate(d.getDate()-1);
+  }
+  return n;
 }
 
 function launchConfetti(){
@@ -1590,12 +1958,33 @@ function renderPlans(){
       <div class="sub">Pastdagi + tugma orqali qo'shing</div></div>`));
   }
 
+  // Fokus metrikasi: bu hafta yopilgan vazifalarning nechtasi maqsadga bog'liq?
+  if(kind==='weekly' && plan.goals.length){
+    const [mon,sun]=weekRange(key);
+    const inWeek=(iso)=>{ if(!iso) return false; const k=iso.slice(0,10);
+      return k>=dateKey(new Date(mon.getUTCFullYear(),mon.getUTCMonth(),mon.getUTCDate()))
+          && k<=dateKey(new Date(sun.getUTCFullYear(),sun.getUTCMonth(),sun.getUTCDate())); };
+    const doneWeek=state.data.tasks.filter(t=>t.completed&&inWeek(t.completedAt));
+    const linked=doneWeek.filter(t=>t.goalId&&plan.goals.some(g=>g.id===t.goalId));
+    if(doneWeek.length){
+      const pctFocus=Math.round(linked.length/doneWeek.length*100);
+      sec.appendChild(el(`<div class="focus-metric ${pctFocus<30?'low':''}">
+        <div class="fm-num">${linked.length}/${doneWeek.length}</div>
+        <div class="fm-text">Bu hafta yopilgan vazifalarning <b>${pctFocus}%</b> i maqsadga bog'liq
+          ${pctFocus<30?'<br><span class="fm-warn">Ko\'p ish qilinyapti, lekin maqsaddan tashqarida</span>':''}</div>
+      </div>`));
+    }
+  }
+
   plan.goals.forEach(g=>{
+    const linkedN=state.data.tasks.filter(t=>t.goalId===g.id&&!t.archived).length;
+    const linkedDone=state.data.tasks.filter(t=>t.goalId===g.id&&t.completed).length;
     const row=el(`<div class="goal-row ${g.done?'done':''}">
       <div class="goal-check ${g.done?'done':''}">${g.done?'✓':''}</div>
       <div class="goal-body">
         <div class="goal-title">${esc(g.title)}</div>
         ${g.note?`<div class="goal-note">${esc(g.note)}</div>`:''}
+        ${linkedN?`<div class="goal-link">🔗 ${linkedDone}/${linkedN} vazifa bajarildi</div>`:''}
       </div>
       <button class="goal-del" aria-label="O'chirish">×</button>
     </div>`);
@@ -1679,12 +2068,19 @@ function renderKayzen(){
   const d=state.data;const dt=state.kayzenDate;
   sec.appendChild(buildDateNav(dt,(nk)=>{state.kayzenDate=nk;renderKayzen()}));
   sec.appendChild(el(`<div class="kayzen-intro">🧘 Bugun 10 daqiqa ajratib, o'zingizni tahlil qiling</div>`));
-  const qs=[...d.kayzen.questions].sort((a,b)=>a.order-b.order);
+  const all=[...d.kayzen.questions].sort((a,b)=>a.order-b.order);
+  const isSunday = parseKey(dt).getDay()===0;
+  // Og'ir strategik savollar faqat yakshanba kuni chiqadi.
+  // Har kuni qarz/xavf haqida o'ylash refleksiya emas - tashvish sikli.
+  const qs = all.filter(q => (q.freq||'daily')==='daily' || isSunday);
+  if(isSunday && all.some(q=>q.freq==='weekly')){
+    sec.appendChild(el(`<div class="kayzen-weekly-note">📅 Bugun yakshanba — haftalik chuqur savollar ham qo'shildi</div>`));
+  }
   const entries=d.kayzen.entries[dt]||{};
   qs.forEach(q=>{
     const val=entries[q.id]||'';
     const card=el(`<div class="kayzen-q">
-      <div class="q-text">${esc(q.text)}</div>
+      <div class="q-text">${(q.freq==='weekly')?'<span class="q-weekly">HAFTALIK</span> ':''}${esc(q.text)}</div>
       <textarea class="textarea" placeholder="Javobingizni shu yerga yozing..." rows="3">${esc(val)}</textarea>
       <div class="save-indicator">✓ Saqlandi</div>
     </div>`);
